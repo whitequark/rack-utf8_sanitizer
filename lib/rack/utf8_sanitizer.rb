@@ -34,21 +34,24 @@ module Rack
               sanitize_string(value).
               force_encoding('ASCII-8BIT'))
 
-          env[key] = URI.encode(
-              sanitize_string(decoded_value))
+          env[key] = transfer_frozen(value,
+              URI.encode(sanitize_string(decoded_value)))
 
         elsif key =~ /^HTTP_/
           # Just sanitize the headers and leave them in UTF-8. There is
           # no reason to have UTF-8 in headers, but if it's valid, let it be.
 
-          env[key] = sanitize_string(value)
+          env[key] = transfer_frozen(value,
+              sanitize_string(value))
         end
       end
     end
 
+    protected
+
     def sanitize_string(input)
       if input.is_a? String
-        input.force_encoding('UTF-8')
+        input = input.dup.force_encoding('UTF-8')
 
         if input.valid_encoding?
           input
@@ -61,6 +64,14 @@ module Rack
         end
       else
         input
+      end
+    end
+
+    def transfer_frozen(from, to)
+      if from.frozen?
+        to.freeze
+      else
+        to
       end
     end
   end

@@ -120,4 +120,19 @@ describe Rack::UTF8Sanitizer do
     behaves_like :identity_plain
     behaves_like :identity_uri
   end
+
+  describe "with frozen strings" do
+    before do
+      @plain_input = "bar baz".freeze
+      @uri_input   = "bar+baz".freeze
+    end
+
+    it "preserves the frozen? status of input" do
+      env  = @app.({ "HTTP_USER_AGENT" => @plain_input,
+                     "REQUEST_PATH" => @uri_input })
+
+      env["HTTP_USER_AGENT"].should.be.frozen
+      env["REQUEST_PATH"].should.be.frozen
+    end
+  end
 end
