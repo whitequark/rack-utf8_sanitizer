@@ -18,11 +18,15 @@ Or install it yourself as:
 
 For Rails, add this to your `application.rb`:
 
-    config.middleware.insert_before "Rack::Lock", Rack::UTF8Sanitizer
+``` ruby
+config.middleware.insert_before "Rack::Lock", Rack::UTF8Sanitizer
+```
 
 For Rack apps, add this to `config.ru`:
 
-    use Rack::UTF8Sanitizer
+``` ruby
+use Rack::UTF8Sanitizer
+```
 
 ## Usage
 
