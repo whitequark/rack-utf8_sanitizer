@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name          = "rack-utf8_sanitizer"
-  gem.version       = '1.0.0.pre1'
+  gem.version       = '1.0.0'
   gem.authors       = ["Peter Zotov"]
   gem.email         = ["whitequark@whitequark.org"]
   gem.description   = %{Rack::UTF8Sanitizer is a Rack middleware which cleans up } <<
