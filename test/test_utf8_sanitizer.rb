@@ -31,7 +31,7 @@ describe Rack::UTF8Sanitizer do
   describe "with invalid UTF-8 input" do
     before do
       @plain_input = "foo\xe0".force_encoding('UTF-8')
-      @uri_input   = "foo%E0".force_encoding('UTF-8')
+      @uri_input   = "http://bar/foo%E0".force_encoding('UTF-8')
     end
 
     behaves_like :does_sanitize_plain
@@ -40,7 +40,7 @@ describe Rack::UTF8Sanitizer do
 
   describe "with invalid, incorrectly percent-encoded UTF-8 URI input" do
     before do
-      @uri_input   = "foo%E0\xe0".force_encoding('UTF-8')
+      @uri_input   = "http://bar/foo%E0\xe0".force_encoding('UTF-8')
     end
 
     behaves_like :does_sanitize_uri
@@ -49,7 +49,7 @@ describe Rack::UTF8Sanitizer do
   describe "with invalid ASCII-8BIT input" do
     before do
       @plain_input = "foo\xe0"
-      @uri_input   = "foo%E0"
+      @uri_input   = "http://bar/foo%E0"
     end
 
     behaves_like :does_sanitize_plain
@@ -58,7 +58,7 @@ describe Rack::UTF8Sanitizer do
 
   describe "with invalid, incorrectly percent-encoded ASCII-8BIT URI input" do
     before do
-      @uri_input   = "foo%E0\xe0"
+      @uri_input   = "http://bar/foo%E0\xe0"
     end
 
     behaves_like :does_sanitize_uri
@@ -89,7 +89,7 @@ describe Rack::UTF8Sanitizer do
   describe "with valid UTF-8 input" do
     before do
       @plain_input = "foo bar лол".force_encoding('UTF-8')
-      @uri_input   = "foo+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
+      @uri_input   = "http://bar/foo+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
     end
 
     behaves_like :identity_plain
@@ -98,7 +98,7 @@ describe Rack::UTF8Sanitizer do
 
   describe "with valid, not percent-encoded UTF-8 URI input" do
     before do
-      @uri_input   = "foo+bar+лол".force_encoding('UTF-8')
+      @uri_input   = "http://bar/foo+bar+лол".force_encoding('UTF-8')
     end
 
     it "does not change URI-like entity (REQUEST_PATH)" do
@@ -114,7 +114,7 @@ describe Rack::UTF8Sanitizer do
   describe "with valid ASCII-8BIT input" do
     before do
       @plain_input = "bar baz"
-      @uri_input   = "bar+baz"
+      @uri_input   = "http://bar/bar+baz"
     end
 
     behaves_like :identity_plain
@@ -124,7 +124,7 @@ describe Rack::UTF8Sanitizer do
   describe "with frozen strings" do
     before do
       @plain_input = "bar baz".freeze
-      @uri_input   = "bar+baz".freeze
+      @uri_input   = "http://bar/bar+baz".freeze
     end
 
     it "preserves the frozen? status of input" do
