@@ -1,3 +1,5 @@
+# encoding: ascii-8bit
+
 require 'uri'
 
 module Rack
@@ -30,12 +32,13 @@ module Rack
           #
           # The result is guaranteed to be UTF-8-safe.
 
-          decoded_value = URI.decode(
+          decoded_value = unescape_unreserved(
               sanitize_string(value).
               force_encoding('ASCII-8BIT'))
 
           env[key] = transfer_frozen(value,
-              URI.encode(sanitize_string(decoded_value)))
+              escape_unreserved(
+                sanitize_string(decoded_value)))
 
         elsif key =~ /^HTTP_/
           # Just sanitize the headers and leave them in UTF-8. There is
@@ -48,6 +51,41 @@ module Rack
     end
 
     protected
+
+    # This regexp matches all 'unreserved' characters from RFC3986 (2.3),
+    # plus all multibyte UTF-8 characters.
+    UNRESERVED_OR_UTF8 = /[A-Za-z0-9\-._~\x80-\xFF]/
+
+    # RFC3986, 2.2 states that the characters from 'reserved' group must be
+    # protected during normalization (which is what UTF8Sanitizer does).
+    #
+    # However, the regexp approach used by URI.unescape is not sophisticated
+    # enough for our task.
+    def unescape_unreserved(input)
+      input.gsub(/%([a-f\d]{2})/i) do |encoded|
+        decoded = [$1.hex].pack('C')
+
+        if decoded =~ UNRESERVED_OR_UTF8
+          decoded
+        else
+          encoded
+        end
+      end
+    end
+
+    # This regexp matches unsafe characters, i.e. everything except 'reserved'
+    # and 'unreserved' characters from RFC3986 (2.3), and additionally '%',
+    # as percent-encoded unreserved characters could be left over from the
+    # `unescape_unreserved` invocation.
+    #
+    # See also URI::REGEXP::PATTERN::{UNRESERVED,RESERVED}.
+    UNSAFE           = /[^\-_.!~*'()a-zA-Z\d;\/?:@&=+$,\[\]%]/
+
+    # Performs the reverse function of `unescape_unreserved`. Unlike
+    # the previous function, we can reuse the logic in URI#escape.
+    def escape_unreserved(input)
+      URI.escape(input, UNSAFE)
+    end
 
     def sanitize_string(input)
       if input.is_a? String

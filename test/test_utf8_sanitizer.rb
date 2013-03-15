@@ -97,7 +97,7 @@ describe Rack::UTF8Sanitizer do
 
     describe "with URI characters from reserved range" do
       before do
-        @uri_input   = "http://bar/foo+%2F+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
+        @uri_input   = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
       end
 
       behaves_like :identity_uri
@@ -130,7 +130,7 @@ describe Rack::UTF8Sanitizer do
 
     describe "with URI characters from reserved range" do
       before do
-        @uri_input   = "http://bar/foo+%2F+bar+%D0%BB%D0%BE%D0%BB"
+        @uri_input   = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB"
       end
 
       behaves_like :identity_uri
