@@ -9,3 +9,7 @@ rvm:
 
 script:
   - rake spec
+
+matrix:
+  allow_failures:
+    - rvm: jruby-19mode
