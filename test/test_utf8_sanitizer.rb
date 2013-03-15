@@ -94,6 +94,14 @@ describe Rack::UTF8Sanitizer do
 
     behaves_like :identity_plain
     behaves_like :identity_uri
+
+    describe "with URI characters from reserved range" do
+      before do
+        @uri_input   = "http://bar/foo+%2F+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
+      end
+
+      behaves_like :identity_uri
+    end
   end
 
   describe "with valid, not percent-encoded UTF-8 URI input" do
@@ -119,6 +127,14 @@ describe Rack::UTF8Sanitizer do
 
     behaves_like :identity_plain
     behaves_like :identity_uri
+
+    describe "with URI characters from reserved range" do
+      before do
+        @uri_input   = "http://bar/foo+%2F+bar+%D0%BB%D0%BE%D0%BB"
+      end
+
+      behaves_like :identity_uri
+    end
   end
 
   describe "with frozen strings" do
