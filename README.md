@@ -19,7 +19,7 @@ Or install it yourself as:
 For Rails, add this to your `application.rb`:
 
 ``` ruby
-config.middleware.insert_before "Rack::Lock", Rack::UTF8Sanitizer
+config.middleware.insert_before "Rack::Runtime", Rack::UTF8Sanitizer
 ```
 
 For Rack apps, add this to `config.ru`:
