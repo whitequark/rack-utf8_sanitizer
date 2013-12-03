@@ -9,7 +9,3 @@ rvm:
 
 script:
   - rake spec
-
-matrix:
-  allow_failures:
-    - rvm: rbx
