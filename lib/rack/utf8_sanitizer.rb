@@ -82,9 +82,9 @@ module Rack
     UNSAFE           = /[^\-_.!~*'()a-zA-Z\d;\/?:@&=+$,\[\]%]/
 
     # Performs the reverse function of `unescape_unreserved`. Unlike
-    # the previous function, we can reuse the logic in URI#escape.
+    # the previous function, we can reuse the logic in URI#encode
     def escape_unreserved(input)
-      URI.escape(input, UNSAFE)
+      URI.encode(input, UNSAFE)
     end
 
     def sanitize_string(input)
