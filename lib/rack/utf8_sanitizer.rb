@@ -57,7 +57,7 @@ module Rack
     def decode_string(input)
       unescape_unreserved(
         sanitize_string(input).
-          force_encoding('ASCII-8BIT'))
+          force_encoding(Encoding::ASCII_8BIT))
     end
 
     # This regexp matches all 'unreserved' characters from RFC3986 (2.3),
@@ -97,14 +97,14 @@ module Rack
 
     def sanitize_string(input)
       if input.is_a? String
-        input = input.dup.force_encoding('UTF-8')
+        input = input.dup.force_encoding(Encoding::UTF_8)
 
         if input.valid_encoding?
           input
         else
           input.
-            force_encoding('ASCII-8BIT').
-            encode!('UTF-8',
+            force_encoding(Encoding::ASCII_8BIT).
+            encode!(Encoding::UTF_8,
                     invalid: :replace,
                     undef:   :replace)
         end
