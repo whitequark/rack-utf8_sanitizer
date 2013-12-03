@@ -23,27 +23,11 @@ module Rack
     def sanitize(env)
       env.each do |key, value|
         if URI_FIELDS.include?(key)
-          # URI.encode/decode expect the input to be in ASCII-8BIT.
-          # However, there could be invalid UTF-8 characters both in
-          # raw and percent-encoded form.
-          #
-          # So, first sanitize the value, then percent-decode it while
-          # treating as UTF-8, then sanitize the result and encode it back.
-          #
-          # The result is guaranteed to be UTF-8-safe.
-
-          decoded_value = unescape_unreserved(
-              sanitize_string(value).
-              force_encoding('ASCII-8BIT'))
-
           env[key] = transfer_frozen(value,
-              escape_unreserved(
-                sanitize_string(decoded_value)))
-
+              sanitize_uri_encoded_string(value))
         elsif key =~ /^HTTP_/
           # Just sanitize the headers and leave them in UTF-8. There is
           # no reason to have UTF-8 in headers, but if it's valid, let it be.
-
           env[key] = transfer_frozen(value,
               sanitize_string(value))
         end
@@ -51,6 +35,30 @@ module Rack
     end
 
     protected
+
+    # URI.encode/decode expect the input to be in ASCII-8BIT.
+    # However, there could be invalid UTF-8 characters both in
+    # raw and percent-encoded form.
+    #
+    # So, first sanitize the value, then percent-decode it while
+    # treating as UTF-8, then sanitize the result and encode it back.
+    #
+    # The result is guaranteed to be UTF-8-safe.
+    def sanitize_uri_encoded_string(input)
+      decoded_value = decode_string(input)
+      reencode_string(decoded_value)
+    end
+
+    def reencode_string(decoded_value)
+      escape_unreserved(
+        sanitize_string(decoded_value))
+    end
+
+    def decode_string(input)
+      unescape_unreserved(
+        sanitize_string(input).
+          force_encoding(Encoding::ASCII_8BIT))
+    end
 
     # This regexp matches all 'unreserved' characters from RFC3986 (2.3),
     # plus all multibyte UTF-8 characters.
@@ -82,21 +90,21 @@ module Rack
     UNSAFE           = /[^\-_.!~*'()a-zA-Z\d;\/?:@&=+$,\[\]%]/
 
     # Performs the reverse function of `unescape_unreserved`. Unlike
-    # the previous function, we can reuse the logic in URI#escape.
+    # the previous function, we can reuse the logic in URI#encode
     def escape_unreserved(input)
-      URI.escape(input, UNSAFE)
+      URI.encode(input, UNSAFE)
     end
 
     def sanitize_string(input)
       if input.is_a? String
-        input = input.dup.force_encoding('UTF-8')
+        input = input.dup.force_encoding(Encoding::UTF_8)
 
         if input.valid_encoding?
           input
         else
           input.
-            force_encoding('ASCII-8BIT').
-            encode!('UTF-8',
+            force_encoding(Encoding::ASCII_8BIT).
+            encode!(Encoding::UTF_8,
                     invalid: :replace,
                     undef:   :replace)
         end
