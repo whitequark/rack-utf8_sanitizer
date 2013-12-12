@@ -30,7 +30,7 @@ use Rack::UTF8Sanitizer
 
 ## Usage
 
-Rack::UTF8Sanitizer divides all keys in the [Rack environment](rack.rubyforge.org/doc/SPEC.html) in two distinct groups: keys which contain raw data and the ones with percent-encoded data. The fields which are treated as percent-encoded are: `SCRIPT_NAME`, `REQUEST_PATH`, `REQUEST_URI`, `PATH_INFO`, `QUERY_STRING`, `HTTP_REFERER`.
+Rack::UTF8Sanitizer divides all keys in the [Rack environment](http://rack.rubyforge.org/doc/SPEC.html) in two distinct groups: keys which contain raw data and the ones with percent-encoded data. The fields which are treated as percent-encoded are: `SCRIPT_NAME`, `REQUEST_PATH`, `REQUEST_URI`, `PATH_INFO`, `QUERY_STRING`, `HTTP_REFERER`.
 
 The generic sanitization algorithm is as follows:
 
