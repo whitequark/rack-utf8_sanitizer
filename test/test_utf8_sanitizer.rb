@@ -151,4 +151,66 @@ describe Rack::UTF8Sanitizer do
       env["REQUEST_PATH"].should.be.frozen
     end
   end
+
+  describe "with form data" do
+    def sanitize_form_data
+      @plain_input = "foo bar лол".force_encoding('UTF-8')
+      @uri_input   = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
+      env = @app.({
+         "REQUEST_METHOD" => "POST",
+         "CONTENT_TYPE" => "application/x-www-form-urlencoded;foo=bar",
+         "HTTP_USER_AGENT" => @plain_input,
+         "rack.input" => @rack_input,
+      })
+      sanitized_input = env['rack.input'].read
+      sanitized_input.encoding.should == Encoding::UTF_8
+      sanitized_input.should.be.valid_encoding
+      yield sanitized_input if block_given?
+      env['rack.input'].rewind
+      behaves_like :does_sanitize_plain
+      behaves_like :does_sanitize_uri
+      behaves_like :identity_plain
+      behaves_like :identity_uri
+      env['rack.input'].close
+    end
+
+    it "sanitizes StringIO rack.input" do
+      input = "foo=bla&quux=bar"
+      @rack_input = StringIO.new input
+
+      sanitize_form_data do |sanitized_input|
+        sanitized_input.should == input
+      end
+    end
+
+    it "sanitizes StringIO rack.input with bad encoding" do
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      sanitize_form_data do |sanitized_input|
+        sanitized_input.should != input
+      end
+    end
+
+    it "sanitizes non-StringIO rack.input" do
+      require 'rack/rewindable_input'
+      input = "foo=bla&quux=bar"
+      @rack_input = Rack::RewindableInput.new(StringIO.new(input))
+
+      sanitize_form_data do |sanitized_input|
+        sanitized_input.should == input
+      end
+    end
+
+    it "sanitizes non-StringIO rack.input with bad encoding" do
+      require 'rack/rewindable_input'
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = Rack::RewindableInput.new(StringIO.new(input))
+
+      sanitize_form_data do |sanitized_input|
+        sanitized_input.should != input
+      end
+    end
+
+  end
 end
