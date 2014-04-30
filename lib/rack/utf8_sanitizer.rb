@@ -1,9 +1,12 @@
 # encoding: ascii-8bit
 
 require 'uri'
+require 'stringio'
 
 module Rack
   class UTF8Sanitizer
+    StringIO = ::StringIO
+
     def initialize(app)
       @app = app
     end
@@ -20,7 +23,20 @@ module Rack
         HTTP_REFERER
     )
 
+    SANITIZABLE_CONTENT_TYPES = %w(
+      text/plain
+      application/x-www-form-urlencoded
+    )
+
+    # MRI-optimization
+    POST = 'POST'
+    PUT  = 'PUT'
+
     def sanitize(env)
+      request_method = env['REQUEST_METHOD']
+      if request_method == POST || request_method == PUT
+        sanitize_rack_input(env)
+      end
       env.each do |key, value|
         if URI_FIELDS.include?(key)
           env[key] = transfer_frozen(value,
@@ -35,6 +51,47 @@ module Rack
     end
 
     protected
+
+    def sanitize_rack_input(env)
+      # https://github.com/rack/rack/blob/master/lib/rack/request.rb#L42
+      # Logic borrowed from Rack::Request#media_type,#media_type_params,#content_charset
+      # Ignoring charset in content type.
+      content_type = env['CONTENT_TYPE'].to_s.split(/\s*[;,]\s*/, 2).first.downcase
+      return unless SANITIZABLE_CONTENT_TYPES.any? {|type| content_type == type }
+      env['rack.input'] &&= sanitize_io(env['rack.input'])
+    end
+
+    # Modeled after Rack::RewindableInput
+    # TODO: Should this delegate any methods to the original io?
+    class SanitizedRackInput
+      def initialize(original_io, sanitized_io)
+        @original_io = original_io
+        @sanitized_io = sanitized_io
+      end
+      def gets
+        @sanitized_io.gets
+      end
+      def read(*args)
+        @sanitized_io.read(*args)
+      end
+      def each(&block)
+        @sanitized_io.each(&block)
+      end
+      def rewind
+        @sanitized_io.rewind
+      end
+      def close
+        @sanitized_io.close
+      end
+    end
+
+    def sanitize_io(io)
+      input = io.read
+      io.close
+      sanitized_io = transfer_frozen(input,
+                      sanitize_string(input))
+      SanitizedRackInput.new(io, StringIO.new(sanitized_io))
+    end
 
     # URI.encode/decode expect the input to be in ASCII-8BIT.
     # However, there could be invalid UTF-8 characters both in
