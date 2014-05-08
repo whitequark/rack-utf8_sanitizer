@@ -153,15 +153,18 @@ describe Rack::UTF8Sanitizer do
   end
 
   describe "with form data" do
-    def sanitize_form_data
+    def request_env
       @plain_input = "foo bar лол".force_encoding('UTF-8')
-      @uri_input   = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
-      env = @app.({
+      {
          "REQUEST_METHOD" => "POST",
          "CONTENT_TYPE" => "application/x-www-form-urlencoded;foo=bar",
          "HTTP_USER_AGENT" => @plain_input,
          "rack.input" => @rack_input,
-      })
+      }
+    end
+    def sanitize_form_data(request_env = request_env)
+      @uri_input   = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
+      env = @app.(request_env)
       sanitized_input = env['rack.input'].read
       sanitized_input.encoding.should == Encoding::UTF_8
       sanitized_input.should.be.valid_encoding
@@ -181,6 +184,26 @@ describe Rack::UTF8Sanitizer do
       sanitize_form_data do |sanitized_input|
         sanitized_input.should == input
       end
+    end
+
+    it "cannot handle nil CONTENT_TYPE" do
+      input = "foo=bla&quux=bar"
+      @rack_input = StringIO.new input
+
+      env = request_env.update('CONTENT_TYPE' => nil)
+      lambda {
+        sanitize_form_data(env)
+      }.should.raise(NoMethodError)
+    end
+
+    it "cannot handle empty CONTENT_TYPE" do
+      input = "foo=bla&quux=bar"
+      @rack_input = StringIO.new input
+
+      env = request_env.update('CONTENT_TYPE' => '')
+      lambda {
+        sanitize_form_data(env)
+      }.should.raise(NoMethodError)
     end
 
     it "sanitizes StringIO rack.input with bad encoding" do
