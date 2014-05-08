@@ -166,8 +166,6 @@ describe Rack::UTF8Sanitizer do
       @uri_input   = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
       env = @app.(request_env)
       sanitized_input = env['rack.input'].read
-      sanitized_input.encoding.should == Encoding::UTF_8
-      sanitized_input.should.be.valid_encoding
       yield sanitized_input if block_given?
       env['rack.input'].rewind
       behaves_like :does_sanitize_plain
@@ -182,28 +180,10 @@ describe Rack::UTF8Sanitizer do
       @rack_input = StringIO.new input
 
       sanitize_form_data do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
         sanitized_input.should == input
       end
-    end
-
-    it "cannot handle nil CONTENT_TYPE" do
-      input = "foo=bla&quux=bar"
-      @rack_input = StringIO.new input
-
-      env = request_env.update('CONTENT_TYPE' => nil)
-      lambda {
-        sanitize_form_data(env)
-      }.should.raise(NoMethodError)
-    end
-
-    it "cannot handle empty CONTENT_TYPE" do
-      input = "foo=bla&quux=bar"
-      @rack_input = StringIO.new input
-
-      env = request_env.update('CONTENT_TYPE' => '')
-      lambda {
-        sanitize_form_data(env)
-      }.should.raise(NoMethodError)
     end
 
     it "sanitizes StringIO rack.input with bad encoding" do
@@ -211,6 +191,8 @@ describe Rack::UTF8Sanitizer do
       @rack_input = StringIO.new input
 
       sanitize_form_data do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
         sanitized_input.should != input
       end
     end
@@ -221,6 +203,8 @@ describe Rack::UTF8Sanitizer do
       @rack_input = Rack::RewindableInput.new(StringIO.new(input))
 
       sanitize_form_data do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
         sanitized_input.should == input
       end
     end
@@ -231,7 +215,33 @@ describe Rack::UTF8Sanitizer do
       @rack_input = Rack::RewindableInput.new(StringIO.new(input))
 
       sanitize_form_data do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
         sanitized_input.should != input
+      end
+    end
+
+    it "does not sanitize the rack body if there is no CONTENT_TYPE" do
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env.update('CONTENT_TYPE' => nil)
+      sanitize_form_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::ASCII_8BIT
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
+      end
+    end
+
+    it "does not sanitize the rack body if there is empty CONTENT_TYPE" do
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env.update('CONTENT_TYPE' => '')
+      sanitize_form_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::ASCII_8BIT
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
       end
     end
 
