@@ -4,8 +4,10 @@ rvm:
   - 1.9.2
   - 1.9.3
   - 2.0.0
-  - jruby-19mode
-  - rbx
+  # 2.1, not 2.1.0 until fixed https://github.com/travis-ci/travis-ci/issues/2220
+  - 2.1
+  - jruby
+  - rbx-2
 
 script:
   - rake spec

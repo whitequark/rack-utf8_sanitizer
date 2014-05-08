@@ -56,7 +56,9 @@ module Rack
       # https://github.com/rack/rack/blob/master/lib/rack/request.rb#L42
       # Logic borrowed from Rack::Request#media_type,#media_type_params,#content_charset
       # Ignoring charset in content type.
-      content_type = env['CONTENT_TYPE'].to_s.split(/\s*[;,]\s*/, 2).first.downcase
+      content_type   = env['CONTENT_TYPE']
+      content_type &&= content_type.split(/\s*[;,]\s*/, 2).first
+      content_type &&= content_type.downcase
       return unless SANITIZABLE_CONTENT_TYPES.any? {|type| content_type == type }
       env['rack.input'] &&= sanitize_io(env['rack.input'])
     end
