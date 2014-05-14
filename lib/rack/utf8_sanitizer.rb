@@ -84,12 +84,12 @@ module Rack
       end
       def close
         @sanitized_io.close
+        @original_io.close if @original_io.respond_to?(:close)
       end
     end
 
     def sanitize_io(io)
       input = io.read
-      io.close
       sanitized_io = transfer_frozen(input,
                       sanitize_string(input))
       SanitizedRackInput.new(io, StringIO.new(sanitized_io))
