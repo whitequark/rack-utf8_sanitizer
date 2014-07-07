@@ -28,15 +28,8 @@ module Rack
       application/x-www-form-urlencoded
     )
 
-    # MRI-optimization
-    POST = 'POST'
-    PUT  = 'PUT'
-
     def sanitize(env)
-      request_method = env['REQUEST_METHOD']
-      if request_method == POST || request_method == PUT
-        sanitize_rack_input(env)
-      end
+      sanitize_rack_input(env)
       env.each do |key, value|
         if URI_FIELDS.include?(key)
           env[key] = transfer_frozen(value,
