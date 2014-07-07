@@ -21,4 +21,5 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency "bacon"
   gem.add_development_dependency "bacon-colored_output"
+  gem.add_development_dependency "rake"
 end

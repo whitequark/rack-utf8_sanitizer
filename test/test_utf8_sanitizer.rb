@@ -186,6 +186,17 @@ describe Rack::UTF8Sanitizer do
       end
     end
 
+    it "sanitizes StringIO rack.input on GET" do
+      input = "foo=bla&quux=bar"
+      @rack_input = StringIO.new input
+
+      sanitize_form_data(request_env.merge("REQUEST_METHOD" => "GET")) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
+      end
+    end
+
     it "sanitizes StringIO rack.input with bad encoding" do
       input =  "foo=bla&quux=bar\xED"
       @rack_input = StringIO.new input
