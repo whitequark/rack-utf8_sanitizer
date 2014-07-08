@@ -26,6 +26,8 @@ module Rack
     SANITIZABLE_CONTENT_TYPES = %w(
       text/plain
       application/x-www-form-urlencoded
+      application/json
+      text/javascript
     )
 
     def sanitize(env)
