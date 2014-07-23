@@ -152,6 +152,22 @@ describe Rack::UTF8Sanitizer do
     end
   end
 
+  describe "with symbols in the env" do
+    before do
+      @uri_input = "http://bar/foo%E0\xe0".force_encoding('UTF-8')
+    end
+
+    it "sanitizes REQUEST_PATH with invalid UTF-8 URI input" do
+      env  = @app.({ :requested_at => "2014-07-22",
+                     "REQUEST_PATH" => @uri_input })
+
+      result = env["REQUEST_PATH"]
+
+      result.encoding.should == Encoding::US_ASCII
+      result.should.be.valid_encoding
+    end
+  end
+
   describe "with form data" do
     def request_env
       @plain_input = "foo bar лол".force_encoding('UTF-8')
