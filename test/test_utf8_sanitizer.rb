@@ -229,6 +229,7 @@ describe Rack::UTF8Sanitizer do
       @rack_input = StringIO.new input
 
       sanitize_form_data do |sanitized_input|
+        # URI.decode_www_form does some encoding magic
         sanitized_input.split("&").each do |pair|
           pair.split("=", 2).each do |component|
             decoded = URI.decode_www_form_component(component)
