@@ -224,6 +224,22 @@ describe Rack::UTF8Sanitizer do
       end
     end
 
+    it "sanitizes StringIO rack.input with form encoded bad encoding" do
+      input = "foo=bla&foo=baz&quux%ED=bar%ED"
+      @rack_input = StringIO.new input
+
+      sanitize_form_data do |sanitized_input|
+        # URI.decode_www_form does some encoding magic
+        sanitized_input.split("&").each do |pair|
+          pair.split("=", 2).each do |component|
+            decoded = URI.decode_www_form_component(component)
+            decoded.should.be.valid_encoding
+          end
+        end
+        sanitized_input.should != input
+      end
+    end
+
     it "sanitizes non-StringIO rack.input" do
       require 'rack/rewindable_input'
       input = "foo=bla&quux=bar"

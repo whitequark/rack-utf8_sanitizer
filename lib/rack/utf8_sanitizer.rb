@@ -32,6 +32,10 @@ module Rack
       text/javascript
     )
 
+    URI_ENCODED_CONTENT_TYPES = %w(
+      application/x-www-form-urlencoded
+    )
+
     def sanitize(env)
       sanitize_rack_input(env)
       env.each do |key, value|
@@ -57,7 +61,8 @@ module Rack
       content_type &&= content_type.split(/\s*[;,]\s*/, 2).first
       content_type &&= content_type.downcase
       return unless SANITIZABLE_CONTENT_TYPES.any? {|type| content_type == type }
-      env['rack.input'] &&= sanitize_io(env['rack.input'])
+      uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
+      env['rack.input'] &&= sanitize_io(env['rack.input'], uri_encoded)
     end
 
     # Modeled after Rack::RewindableInput
@@ -85,11 +90,15 @@ module Rack
       end
     end
 
-    def sanitize_io(io)
+    def sanitize_io(io, uri_encoded = false)
       input = io.read
-      sanitized_io = transfer_frozen(input,
-                      sanitize_string(input))
-      SanitizedRackInput.new(io, StringIO.new(sanitized_io))
+      sanitized_input = sanitize_string(input)
+      if uri_encoded
+        sanitized_input = sanitize_uri_encoded_string(sanitized_input).
+          force_encoding(Encoding::UTF_8)
+      end
+      sanitized_input = transfer_frozen(input, sanitized_input)
+      SanitizedRackInput.new(io, StringIO.new(sanitized_input))
     end
 
     # URI.encode/decode expect the input to be in ASCII-8BIT.
