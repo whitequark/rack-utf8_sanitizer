@@ -94,8 +94,8 @@ module Rack
       input = io.read
       sanitized_input = sanitize_string(input)
       if uri_encoded
-        sanitized_input = sanitize_uri_encoded_string(sanitized_input)
-        sanitized_input = sanitized_input.force_encoding(Encoding::UTF_8)
+        sanitized_input = sanitize_uri_encoded_string(sanitized_input).
+          force_encoding(Encoding::UTF_8)
       end
       sanitized_input = transfer_frozen(input, sanitized_input)
       SanitizedRackInput.new(io, StringIO.new(sanitized_input))
