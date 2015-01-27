@@ -178,17 +178,20 @@ describe Rack::UTF8Sanitizer do
          "rack.input" => @rack_input,
       }
     end
+
     def sanitize_form_data(request_env = request_env)
-      @uri_input   = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
-      env = @app.(request_env)
-      sanitized_input = env['rack.input'].read
+      @uri_input = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
+      @response_env = @app.(request_env)
+      sanitized_input = @response_env['rack.input'].read
+
       yield sanitized_input if block_given?
-      env['rack.input'].rewind
+
+      @response_env['rack.input'].rewind
       behaves_like :does_sanitize_plain
       behaves_like :does_sanitize_uri
       behaves_like :identity_plain
       behaves_like :identity_uri
-      env['rack.input'].close
+      @response_env['rack.input'].close
     end
 
     it "sanitizes StringIO rack.input" do
@@ -288,5 +291,15 @@ describe Rack::UTF8Sanitizer do
       end
     end
 
+    it "adjusts content-length when replacing input" do
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env.update("CONTENT_LENGTH" => input.bytesize)
+      sanitize_form_data(env) do |sanitized_input|
+        sanitized_input.bytesize.should != input.bytesize
+        @response_env["CONTENT_LENGTH"].should == sanitized_input.bytesize.to_s
+      end
+    end
   end
 end

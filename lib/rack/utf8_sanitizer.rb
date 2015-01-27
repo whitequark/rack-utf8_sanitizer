@@ -62,7 +62,13 @@ module Rack
       content_type &&= content_type.downcase
       return unless SANITIZABLE_CONTENT_TYPES.any? {|type| content_type == type }
       uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
-      env['rack.input'] &&= sanitize_io(env['rack.input'], uri_encoded)
+
+      if env["rack.input"]
+        sanitized_input = sanitize_io(env['rack.input'], uri_encoded)
+
+        env['rack.input'] = sanitized_input
+        env['CONTENT_LENGTH'] &&= sanitized_input.size.to_s
+      end
     end
 
     # Modeled after Rack::RewindableInput
@@ -72,18 +78,28 @@ module Rack
         @original_io = original_io
         @sanitized_io = sanitized_io
       end
+
       def gets
         @sanitized_io.gets
       end
+
       def read(*args)
         @sanitized_io.read(*args)
       end
+
       def each(&block)
         @sanitized_io.each(&block)
       end
+
       def rewind
         @sanitized_io.rewind
       end
+
+      def size
+        # StringIO#size is bytesize
+        @sanitized_io.size
+      end
+
       def close
         @sanitized_io.close
         @original_io.close if @original_io.respond_to?(:close)
