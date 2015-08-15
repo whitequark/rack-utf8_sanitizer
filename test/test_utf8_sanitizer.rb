@@ -227,6 +227,17 @@ describe Rack::UTF8Sanitizer do
       end
     end
 
+    it "strip UTF-8 BOM from StringIO rack.input" do
+      input = %(\xef\xbb\xbf{"Hello": "World"})
+      @rack_input = StringIO.new input
+
+      sanitize_form_data(request_env.merge("CONTENT_TYPE" => "application/json")) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == '{"Hello": "World"}'
+      end
+    end
+
     it "sanitizes StringIO rack.input with form encoded bad encoding" do
       input = "foo=bla&foo=baz&quux%ED=bar%ED"
       @rack_input = StringIO.new input

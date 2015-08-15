@@ -108,7 +108,7 @@ module Rack
 
     def sanitize_io(io, uri_encoded = false)
       input = io.read
-      sanitized_input = sanitize_string(input)
+      sanitized_input = sanitize_string(strip_byte_order_mark(input))
       if uri_encoded
         sanitized_input = sanitize_uri_encoded_string(sanitized_input).
           force_encoding(Encoding::UTF_8)
@@ -200,6 +200,14 @@ module Rack
       else
         to
       end
+    end
+
+    UTF8_BOM = "\xef\xbb\xbf".force_encoding(Encoding::BINARY).freeze
+    UTF8_BOM_SIZE = UTF8_BOM.bytesize
+
+    def strip_byte_order_mark(input)
+      return input unless input.start_with?(UTF8_BOM)
+      input.byteslice(UTF8_BOM_SIZE..-1)
     end
   end
 end
