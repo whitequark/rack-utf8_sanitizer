@@ -179,7 +179,7 @@ describe Rack::UTF8Sanitizer do
       }
     end
 
-    def sanitize_form_data(request_env = request_env)
+    def sanitize_form_data(request_env = request_env())
       @uri_input = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
       @response_env = @app.(request_env)
       sanitized_input = @response_env['rack.input'].read
