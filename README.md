@@ -43,6 +43,18 @@ For fields with "raw data", the algorithm is applied once and the (UTF-8 encoded
 
 For fields with "percent-encoded data", the algorithm is applied twice to catch both invalid characters appearing as-is and invalid characters appearing in the percent encoding. The percent encoded, ASCII-8BIT encoded result is left in the environment.
 
+### Sanitizable content types
+
+The default content types to be sanitized are 'text/plain', 'application/x-www-form-urlencoded', 'application/json', 'text/javascript'. You may wish to modify this, for example if your app accepts specific or custom media types in the CONTENT_TYPE header. If you want to change the sanitizable content types, you can pass options when using Rack::UTF8Sanitizer. 
+
+To add sanitizable content types to the list of defaults, pass the `additional_content_types` options when using Rack::UTF8Sanitizer, e.g.
+
+    config.middleware.insert 0, Rack::UTF8Sanitizer, additional_content_types: ['application/vnd.api+json']
+
+To explicitly set sanitizable content types and override the defaults, use the `sanitizable_content_types` option:
+
+    config.middleware.insert 0, Rack::UTF8Sanitizer, sanitizable_content_types: ['application/vnd.api+json']
+
 ## Contributing
 
 1. Fork it
