@@ -27,18 +27,18 @@ module Rack
         HTTP_REFERER
         ORIGINAL_FULLPATH
         ORIGINAL_SCRIPT_NAME
-    )
+    ).map(&:freeze).freeze
 
     SANITIZABLE_CONTENT_TYPES = %w(
       text/plain
       application/x-www-form-urlencoded
       application/json
       text/javascript
-    )
+    ).map(&:freeze).freeze
 
     URI_ENCODED_CONTENT_TYPES = %w(
       application/x-www-form-urlencoded
-    )
+    ).map(&:freeze).freeze
 
     def sanitize(env)
       sanitize_rack_input(env)
