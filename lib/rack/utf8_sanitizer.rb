@@ -12,7 +12,7 @@ module Rack
     def initialize(app, options={})
       @app = app
       @sanitizable_content_types = options[:sanitizable_content_types]
-      @sanitizable_content_types ||= SANITIZABLE_CONTENT_TYPES.concat(options[:additional_content_types] || [])
+      @sanitizable_content_types ||= SANITIZABLE_CONTENT_TYPES + (options[:additional_content_types] || [])
     end
 
     def call(env)
