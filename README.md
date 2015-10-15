@@ -62,3 +62,5 @@ To explicitly set sanitizable content types and override the defaults, use the `
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+To run the tests, run `rake spec` in the project directory.
