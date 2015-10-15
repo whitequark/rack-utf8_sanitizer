@@ -313,4 +313,88 @@ describe Rack::UTF8Sanitizer do
       end
     end
   end
+
+  describe "with custom content-type" do
+    def request_env
+      @plain_input = "foo bar лол".force_encoding('UTF-8')
+      {
+          "REQUEST_METHOD" => "POST",
+          "CONTENT_TYPE" => "application/vnd.api+json",
+          "HTTP_USER_AGENT" => @plain_input,
+          "rack.input" => @rack_input,
+      }
+    end
+
+    def sanitize_data(request_env = request_env())
+      @uri_input = "http://bar/foo+%2F%3A+bar+%D0%BB%D0%BE%D0%BB".force_encoding('UTF-8')
+      @response_env = @app.(request_env)
+      sanitized_input = @response_env['rack.input'].read
+
+      yield sanitized_input if block_given?
+    end
+
+    it "does not sanitize custom content-type by default" do
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::ASCII_8BIT
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
+      end
+    end
+
+    it "sanitizes custom content-type if additional_content_types given" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, additional_content_types: ["application/vnd.api+json"])
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should != input
+      end
+    end
+
+    it "sanitizes default content-type if additional_content_types given" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, additional_content_types: ["application/vnd.api+json"])
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env.update('CONTENT_TYPE' => 'application/json')
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should != input
+      end
+    end
+
+    it "sanitizes custom content-type if sanitizable_content_types given" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitizable_content_types: ["application/vnd.api+json"])
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should != input
+      end
+    end
+
+    it "does not sanitize default content-type if sanitizable_content_types does not include it" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitizable_content_types: ["application/vnd.api+json"])
+      input =  "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env.update('CONTENT_TYPE' => 'application/json')
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::ASCII_8BIT
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
+      end
+    end
+  end
 end

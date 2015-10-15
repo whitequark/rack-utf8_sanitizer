@@ -7,8 +7,12 @@ module Rack
   class UTF8Sanitizer
     StringIO = ::StringIO
 
-    def initialize(app)
+    # options[:sanitizable_content_types] Array
+    # options[:additional_content_types] Array
+    def initialize(app, options={})
       @app = app
+      @sanitizable_content_types = options[:sanitizable_content_types]
+      @sanitizable_content_types ||= SANITIZABLE_CONTENT_TYPES + (options[:additional_content_types] || [])
     end
 
     def call(env)
@@ -23,18 +27,18 @@ module Rack
         HTTP_REFERER
         ORIGINAL_FULLPATH
         ORIGINAL_SCRIPT_NAME
-    )
+    ).map(&:freeze).freeze
 
     SANITIZABLE_CONTENT_TYPES = %w(
       text/plain
       application/x-www-form-urlencoded
       application/json
       text/javascript
-    )
+    ).map(&:freeze).freeze
 
     URI_ENCODED_CONTENT_TYPES = %w(
       application/x-www-form-urlencoded
-    )
+    ).map(&:freeze).freeze
 
     def sanitize(env)
       sanitize_rack_input(env)
@@ -60,7 +64,7 @@ module Rack
       content_type   = env['CONTENT_TYPE']
       content_type &&= content_type.split(/\s*[;,]\s*/, 2).first
       content_type &&= content_type.downcase
-      return unless SANITIZABLE_CONTENT_TYPES.any? {|type| content_type == type }
+      return unless @sanitizable_content_types.any? {|type| content_type == type }
       uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
 
       if env["rack.input"]
