@@ -2,8 +2,8 @@
 
 Gem::Specification.new do |gem|
   gem.name          = "rack-utf8_sanitizer"
-  gem.version       = '1.3.1'
-  gem.authors       = ["Peter Zotov"]
+  gem.version       = '1.3.2'
+  gem.authors       = ["whitequark"]
   gem.email         = ["whitequark@whitequark.org"]
   gem.description   = %{Rack::UTF8Sanitizer is a Rack middleware which cleans up } <<
                       %{invalid UTF8 characters in request URI and headers.}
