@@ -40,13 +40,15 @@ module Rack
       application/x-www-form-urlencoded
     ).map(&:freeze).freeze
 
+    HTTP_ = 'HTTP_'.freeze
+
     def sanitize(env)
       sanitize_rack_input(env)
       env.each do |key, value|
         if URI_FIELDS.include?(key)
           env[key] = transfer_frozen(value,
               sanitize_uri_encoded_string(value))
-        elsif key.to_s.start_with?("HTTP_")
+        elsif key.to_s.start_with?(HTTP_)
           # Just sanitize the headers and leave them in UTF-8. There is
           # no reason to have UTF-8 in headers, but if it's valid, let it be.
           env[key] = transfer_frozen(value,
