@@ -156,7 +156,7 @@ module Rack
     # enough for our task.
     def unescape_unreserved(input)
       input.gsub(/%([a-f\d]{2})/i) do |encoded|
-        decoded = [$1.hex].pack('C')
+        decoded = $1.hex.chr
 
         if decoded =~ UNRESERVED_OR_UTF8
           decoded
