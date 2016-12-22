@@ -28,6 +28,17 @@ describe Rack::UTF8Sanitizer do
     end
   end
 
+  describe "with invalid host input" do
+    it "sanitizes host entity (SERVER_NAME)" do
+      host   = "host\xD0".force_encoding('UTF-8')
+      env    = @app.({ "SERVER_NAME" => host })
+      result = env["SERVER_NAME"]
+
+      result.encoding.should == Encoding::US_ASCII
+      result.should.be.valid_encoding
+    end
+  end
+
   describe "with invalid UTF-8 input" do
     before do
       @plain_input = "foo\xe0".force_encoding('UTF-8')

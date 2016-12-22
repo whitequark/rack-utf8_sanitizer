@@ -27,6 +27,7 @@ module Rack
         HTTP_REFERER
         ORIGINAL_FULLPATH
         ORIGINAL_SCRIPT_NAME
+        SERVER_NAME
     ).map(&:freeze).freeze
 
     SANITIZABLE_CONTENT_TYPES = %w(
