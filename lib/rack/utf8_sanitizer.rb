@@ -9,10 +9,12 @@ module Rack
 
     # options[:sanitizable_content_types] Array
     # options[:additional_content_types] Array
+    # options[:forced_encoding] Encoding
     def initialize(app, options={})
       @app = app
       @sanitizable_content_types = options[:sanitizable_content_types]
       @sanitizable_content_types ||= SANITIZABLE_CONTENT_TYPES + (options[:additional_content_types] || [])
+      @forced_encoding = options[:forced_encoding] || Encoding::ASCII_8BIT
     end
 
     def call(env)
@@ -191,7 +193,7 @@ module Rack
           input
         else
           input.
-            force_encoding(Encoding::ASCII_8BIT).
+            force_encoding(@forced_encoding).
             encode!(Encoding::UTF_8,
                     invalid: :replace,
                     undef:   :replace)
