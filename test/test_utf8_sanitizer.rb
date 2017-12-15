@@ -452,22 +452,8 @@ describe Rack::UTF8Sanitizer do
       should.raise(UTF8Sanitizer::InvalidEncoding) { sanitize_data(env) }
     end
 
-    it "calls the exception strategy and invokes failure_app" do
-      @app = Rack::UTF8Sanitizer.new(-> env { env }, strategy: :exception, failure_app: -> (env) { [400, {}, ['Bad Encoding']] })
-
-      input = "foo=bla&quux=bar\xED"
-      @rack_input = StringIO.new input
-      @response = nil
-
-      should.not.raise(UTF8Sanitizer::InvalidEncoding) do
-        @response = @app.(request_env)
-      end
-
-      @response.first.should == 400
-    end
-
     it "accepts a proc as a strategy" do
-      truncate = -> (_) { 'replace'.force_encoding(Encoding::UTF_8) }
+      truncate = -> input { 'replace'.force_encoding(Encoding::UTF_8) }
 
       @app = Rack::UTF8Sanitizer.new(-> env { env }, strategy: truncate)
 

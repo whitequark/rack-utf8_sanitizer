@@ -13,19 +13,12 @@ module Rack
     def initialize(app, options={})
       @app = app
       @strategy = build_strategy(options)
-      @failure_app = options[:failure_app]
       @sanitizable_content_types = options[:sanitizable_content_types]
       @sanitizable_content_types ||= SANITIZABLE_CONTENT_TYPES + (options[:additional_content_types] || [])
     end
 
     def call(env)
       @app.call(sanitize(env))
-    rescue ::UTF8Sanitizer::Error => e
-      env['utf8_sanitizer.exception'] = e
-
-      return @failure_app.call(env) if @failure_app
-
-      raise
     end
 
     DEFAULT_STRATEGIES = {
@@ -79,7 +72,7 @@ module Rack
 
       return strategy unless DEFAULT_STRATEGIES.key?(strategy)
 
-      DEFAULT_STRATEGIES[strategy].new(options)
+      DEFAULT_STRATEGIES[strategy].new
     end
 
     def sanitize_rack_input(env)
