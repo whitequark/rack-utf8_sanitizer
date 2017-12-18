@@ -57,7 +57,7 @@ To explicitly set sanitizable content types and override the defaults, use the `
 
 ### Strategies
 
-There are two built in strategies for handling invalid characters. The default strategy is `:replace`, which will cause any invalid characters to be replaces with the unicode replacement caracter (�). The second built in strategy is `:exception` which will cause an `EncodingError` exception to be raised if invalid characters are found (the exception can then be handled by another Rack middleware).
+There are two built in strategies for handling invalid characters. The default strategy is `:replace`, which will cause any invalid characters to be replaces with the unicode replacement character (�). The second built in strategy is `:exception` which will cause an `EncodingError` exception to be raised if invalid characters are found (the exception can then be handled by another Rack middleware).
 
 An object that responds to `#call` and accepts the offending string with invalid characters as an argumant can also be passed as a `:strategy`. This is how you can define custom strategies.
 
