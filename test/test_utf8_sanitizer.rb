@@ -449,7 +449,7 @@ describe Rack::UTF8Sanitizer do
       @rack_input = StringIO.new input
 
       env = request_env
-      should.raise(UTF8Sanitizer::InvalidEncoding) { sanitize_data(env) }
+      should.raise(Rack::UTF8Sanitizer::InvalidEncoding) { sanitize_data(env) }
     end
 
     it "accepts a proc as a strategy" do

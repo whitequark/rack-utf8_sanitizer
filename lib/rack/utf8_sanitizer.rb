@@ -2,10 +2,12 @@
 
 require 'uri'
 require 'stringio'
-require 'utf8_sanitizer'
 
 module Rack
   class UTF8Sanitizer
+    class Error < StandardError; end
+    class InvalidEncoding < Error; end
+
     StringIO = ::StringIO
 
     # options[:sanitizable_content_types] Array
@@ -22,8 +24,22 @@ module Rack
     end
 
     DEFAULT_STRATEGIES = {
-      replace: ::UTF8Sanitizer::Replace,
-      exception: ::UTF8Sanitizer::Exception
+      replace: lambda do |input|
+        input.
+          force_encoding(Encoding::ASCII_8BIT).
+          encode!(Encoding::UTF_8,
+                  invalid: :replace,
+                  undef:   :replace)
+      end,
+      exception: lambda do |input|
+        begin
+          input.
+            force_encoding(Encoding::ASCII_8BIT).
+            encode!(Encoding::UTF_8)
+        rescue EncodingError => e
+          raise InvalidEncoding, e.message
+        end
+      end
     }.freeze
 
     # http://rack.rubyforge.org/doc/SPEC.html
@@ -72,7 +88,7 @@ module Rack
 
       return strategy unless DEFAULT_STRATEGIES.key?(strategy)
 
-      DEFAULT_STRATEGIES[strategy].new
+      DEFAULT_STRATEGIES[strategy]
     end
 
     def sanitize_rack_input(env)
