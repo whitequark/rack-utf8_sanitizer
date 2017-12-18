@@ -55,6 +55,26 @@ To explicitly set sanitizable content types and override the defaults, use the `
 
     config.middleware.insert 0, Rack::UTF8Sanitizer, sanitizable_content_types: ['application/vnd.api+json']
 
+### Strategies
+
+There are two built in strategies for handling invalid characters. The default strategy is `:replace`, which will cause any invalid characters to be replaces with the unicode replacement character (�). The second built in strategy is `:exception` which will cause an `EncodingError` exception to be raised if invalid characters are found (the exception can then be handled by another Rack middleware).
+
+An object that responds to `#call` and accepts the offending string with invalid characters as an argumant can also be passed as a `:strategy`. This is how you can define custom strategies.
+
+```ruby
+config.middleware.insert 0, Rack::UTF8Sanitizer, strategy: :exception
+```
+
+```ruby
+replace_string = lambda do |_invalid|
+  Rails.logger.warn('Replacing invalid string')
+
+  '<Bad Encoding>'.freeze
+end
+
+config.middleware.insert 0, Rack::UTF8Sanitizer, strategy: replace_string
+```
+
 ## Contributing
 
 1. Fork it

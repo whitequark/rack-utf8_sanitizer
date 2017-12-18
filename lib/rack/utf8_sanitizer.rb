@@ -11,6 +11,7 @@ module Rack
     # options[:additional_content_types] Array
     def initialize(app, options={})
       @app = app
+      @strategy = build_strategy(options)
       @sanitizable_content_types = options[:sanitizable_content_types]
       @sanitizable_content_types ||= SANITIZABLE_CONTENT_TYPES + (options[:additional_content_types] || [])
     end
@@ -18,6 +19,21 @@ module Rack
     def call(env)
       @app.call(sanitize(env))
     end
+
+    DEFAULT_STRATEGIES = {
+      replace: lambda do |input|
+        input.
+          force_encoding(Encoding::ASCII_8BIT).
+          encode!(Encoding::UTF_8,
+                  invalid: :replace,
+                  undef:   :replace)
+      end,
+      exception: lambda do |input|
+        input.
+          force_encoding(Encoding::ASCII_8BIT).
+          encode!(Encoding::UTF_8)
+      end
+    }.freeze
 
     # http://rack.rubyforge.org/doc/SPEC.html
     URI_FIELDS  = %w(
@@ -59,6 +75,14 @@ module Rack
     end
 
     protected
+
+    def build_strategy(options)
+      strategy = options.fetch(:strategy) { :replace }
+
+      return strategy unless DEFAULT_STRATEGIES.key?(strategy)
+
+      DEFAULT_STRATEGIES[strategy]
+    end
 
     def sanitize_rack_input(env)
       # https://github.com/rack/rack/blob/master/lib/rack/request.rb#L42
@@ -190,11 +214,7 @@ module Rack
         if input.valid_encoding?
           input
         else
-          input.
-            force_encoding(Encoding::ASCII_8BIT).
-            encode!(Encoding::UTF_8,
-                    invalid: :replace,
-                    undef:   :replace)
+          @strategy.call(input)
         end
       else
         input
