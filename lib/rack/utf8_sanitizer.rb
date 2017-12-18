@@ -5,9 +5,6 @@ require 'stringio'
 
 module Rack
   class UTF8Sanitizer
-    class Error < StandardError; end
-    class InvalidEncoding < Error; end
-
     StringIO = ::StringIO
 
     # options[:sanitizable_content_types] Array
@@ -32,13 +29,9 @@ module Rack
                   undef:   :replace)
       end,
       exception: lambda do |input|
-        begin
-          input.
-            force_encoding(Encoding::ASCII_8BIT).
-            encode!(Encoding::UTF_8)
-        rescue EncodingError => e
-          raise InvalidEncoding, e.message
-        end
+        input.
+          force_encoding(Encoding::ASCII_8BIT).
+          encode!(Encoding::UTF_8)
       end
     }.freeze
 
