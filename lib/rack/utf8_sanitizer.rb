@@ -14,6 +14,8 @@ module Rack
       @strategy = build_strategy(options)
       @sanitizable_content_types = options[:sanitizable_content_types]
       @sanitizable_content_types ||= SANITIZABLE_CONTENT_TYPES + (options[:additional_content_types] || [])
+      @only = Array(options[:only]).flatten
+      @except = Array(options[:except]).flatten
     end
 
     def call(env)
@@ -62,6 +64,8 @@ module Rack
     def sanitize(env)
       sanitize_rack_input(env)
       env.each do |key, value|
+        next if skip?(key)
+
         if URI_FIELDS.include?(key)
           env[key] = transfer_frozen(value,
               sanitize_uri_encoded_string(value))
@@ -75,6 +79,13 @@ module Rack
     end
 
     protected
+
+    def skip?(rack_env_key)
+      return true if !@except.empty? && @except.any? { |matcher| rack_env_key[matcher] }
+      return true if !@only.empty? && @only.none? { |matcher| rack_env_key[matcher] }
+
+      false
+    end
 
     def build_strategy(options)
       strategy = options.fetch(:strategy) { :replace }

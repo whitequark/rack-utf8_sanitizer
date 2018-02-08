@@ -409,6 +409,63 @@ describe Rack::UTF8Sanitizer do
     end
   end
 
+  describe "with only and/or except options" do
+    before do
+      @plain_input = "foo\xe0".force_encoding('UTF-8')
+    end
+
+    def request_env
+      {
+          "REQUEST_METHOD" => "POST",
+          "CONTENT_TYPE" => "application/json",
+          "HTTP_USER_AGENT" => @plain_input,
+          "HTTP_CUSTOM_HEADER" => @plain_input,
+          "rack.input" => @rack_input,
+      }
+    end
+
+    def sanitize_data(request_env = request_env())
+      @response_env = @app.(request_env)
+    end
+
+    it 'skips unless in only' do
+      @app = Rack::UTF8Sanitizer.new(
+        -> env { env },
+        only: ['HTTP_CUSTOM_HEADER']
+      )
+      @rack_input = StringIO.new('{}')
+
+      sanitize_data
+      @response_env['HTTP_CUSTOM_HEADER'].should != @plain_input
+      @response_env['HTTP_USER_AGENT'].should == @plain_input
+    end
+
+    it 'skips if in except' do
+      @app = Rack::UTF8Sanitizer.new(
+        -> env { env },
+        except: ['HTTP_CUSTOM_HEADER']
+      )
+      @rack_input = StringIO.new('{}')
+
+      sanitize_data
+      @response_env['HTTP_CUSTOM_HEADER'].should == @plain_input
+      @response_env['HTTP_USER_AGENT'].should != @plain_input
+    end
+
+    it 'works with regular expressions' do
+      @app = Rack::UTF8Sanitizer.new(
+        -> env { env },
+        only: ['HTTP_CUSTOM_HEADER', /(agent|input)/i]
+      )
+      @rack_input = StringIO.new(@plain_input.force_encoding(Encoding::ASCII_8BIT))
+
+      sanitize_data
+      @response_env['HTTP_CUSTOM_HEADER'].should != @plain_input
+      @response_env['HTTP_USER_AGENT'].should != @plain_input
+      @response_env['rack.input'].read.should != @plain_input
+    end
+  end
+
   describe "with custom strategy" do
     def request_env
       @plain_input = "foo bar лол".force_encoding('UTF-8')

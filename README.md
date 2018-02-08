@@ -55,6 +55,22 @@ To explicitly set sanitizable content types and override the defaults, use the `
 
     config.middleware.insert 0, Rack::UTF8Sanitizer, sanitizable_content_types: ['application/vnd.api+json']
 
+### Whitelist/Blacklist Rack Env Keys
+
+Using the `:only` and `:except` keys you can skip sanitation of values in the Rack Env. `:only` and `:except` are arrays that can contain strings or regular expressions.
+
+Only sanitize the body, query string, and url of a request.
+
+```ruby
+config.middleware.insert 0, Rack::UTF8Sanitizer, only: ['rack.input', 'PATH_INFO', 'QUERY_STRING']
+```
+
+Sanitize everything except HTTP headers.
+
+```ruby
+config.middleware.insert 0, Rack::UTF8Sanitizer, except: [/HTTP_.+/]
+```
+
 ### Strategies
 
 There are two built in strategies for handling invalid characters. The default strategy is `:replace`, which will cause any invalid characters to be replaces with the unicode replacement character (�). The second built in strategy is `:exception` which will cause an `EncodingError` exception to be raised if invalid characters are found (the exception can then be handled by another Rack middleware).
