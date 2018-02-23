@@ -168,7 +168,7 @@ module Rack
     #
     # The result is guaranteed to be UTF-8-safe.
     def sanitize_uri_encoded_string(input)
-      input ||= '' if input.nil?
+      return input if input.nil?
       decoded_value = decode_string(input)
       reencode_string(decoded_value)
     end
