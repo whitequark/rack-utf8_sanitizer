@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name          = "rack-utf8_sanitizer"
-  gem.version       = '1.4.0'
+  gem.version       = '1.5.0'
   gem.authors       = ["whitequark"]
   gem.license       = "MIT"
   gem.email         = ["whitequark@whitequark.org"]
