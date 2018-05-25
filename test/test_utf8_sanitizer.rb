@@ -327,6 +327,34 @@ describe Rack::UTF8Sanitizer do
 
   describe "with custom content-type" do
     def request_env
+      {
+          "REQUEST_METHOD" => "GET",
+          "CONTENT_TYPE" => "application/json",
+          "HTTP_COOKIE" => @cookie,
+          "rack.input" => StringIO.new,
+      }
+    end
+
+    it "sanitizes bad http cookie" do
+      @cookie = "foo=bla; quux=bar\xED"
+      response_env = @app.(request_env)
+      response_env['HTTP_COOKIE'].should != @cookie
+      response_env['HTTP_COOKIE'].should == 'foo=bla; quux=bar%EF%BF%BD'
+    end
+
+    it "does not change ok http cookie" do
+      @cookie = "foo=bla; quux=bar"
+      response_env = @app.(request_env)
+      response_env['HTTP_COOKIE'].should == @cookie
+
+      @cookie = "foo=b%3bla; quux=b%20a%20r"
+      response_env = @app.(request_env)
+      response_env['HTTP_COOKIE'].should == @cookie
+    end
+  end
+
+  describe "with custom content-type" do
+    def request_env
       @plain_input = "foo bar лол".force_encoding('UTF-8')
       {
           "REQUEST_METHOD" => "POST",

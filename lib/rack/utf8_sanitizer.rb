@@ -63,6 +63,7 @@ module Rack
 
     def sanitize(env)
       sanitize_rack_input(env)
+      sanitize_cookies(env)
       env.each do |key, value|
         next if skip?(key)
 
@@ -105,7 +106,7 @@ module Rack
       return unless @sanitizable_content_types.any? {|type| content_type == type }
       uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
 
-      if env["rack.input"]
+      if env['rack.input']
         sanitized_input = sanitize_io(env['rack.input'], uri_encoded)
 
         env['rack.input'] = sanitized_input
@@ -157,6 +158,15 @@ module Rack
       end
       sanitized_input = transfer_frozen(input, sanitized_input)
       SanitizedRackInput.new(io, StringIO.new(sanitized_input))
+    end
+
+    def sanitize_cookies(env)
+      return unless env['HTTP_COOKIE']
+
+      env['HTTP_COOKIE'] = env['HTTP_COOKIE']
+        .split(/[;,] */n)
+        .map { |cookie| sanitize_uri_encoded_string(cookie) }
+        .join('; ')
     end
 
     # URI.encode/decode expect the input to be in ASCII-8BIT.
