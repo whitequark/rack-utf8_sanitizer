@@ -160,6 +160,11 @@ module Rack
       SanitizedRackInput.new(io, StringIO.new(sanitized_input))
     end
 
+    # Cookies need to be split and then sanitized as url encoded strings
+    # since the cookie string itself is not url encoded (separated by `;`),
+    # and the normal method of `sanitize_uri_encoded_string` would break
+    # later cookie parsing in the case that a cookie value contained an
+    # encoded `;`.
     def sanitize_cookies(env)
       return unless env['HTTP_COOKIE']
 
