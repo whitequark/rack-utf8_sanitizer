@@ -1,6 +1,9 @@
 # Rack::UTF8Sanitizer
 
-Rack::UTF8Sanitizer is a Rack middleware which cleans up invalid UTF8 characters in request URI and headers.
+Rack::UTF8Sanitizer is a Rack middleware which cleans up invalid UTF8 characters in request URI and headers. Additionally, 
+it cleans up invalid UTF8 characters in the request body (depending on the configurable content type filters) by reading
+the input into a string, sanitizing the string, then replacing the Rack input stream with a rewindable input stream backed
+by the sanitized string.
 
 ## Installation
 
