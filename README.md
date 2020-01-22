@@ -1,6 +1,6 @@
 # Rack::UTF8Sanitizer
 
-Rack::UTF8Sanitizer is a Rack middleware which cleans up invalid UTF8 characters in request URI and headers. Additionally, 
+Rack::UTF8Sanitizer is a Rack middleware which cleans up invalid UTF8 characters in request URI and headers. Additionally,
 it cleans up invalid UTF8 characters in the request body (depending on the configurable content type filters) by reading
 the input into a string, sanitizing the string, then replacing the Rack input stream with a rewindable input stream backed
 by the sanitized string.
@@ -48,7 +48,7 @@ For fields with "percent-encoded data", the algorithm is applied twice to catch 
 
 ### Sanitizable content types
 
-The default content types to be sanitized are 'text/plain', 'application/x-www-form-urlencoded', 'application/json', 'text/javascript'. You may wish to modify this, for example if your app accepts specific or custom media types in the CONTENT_TYPE header. If you want to change the sanitizable content types, you can pass options when using Rack::UTF8Sanitizer. 
+The default content types to be sanitized are 'text/plain', 'application/x-www-form-urlencoded', 'application/json', 'text/javascript'. You may wish to modify this, for example if your app accepts specific or custom media types in the CONTENT_TYPE header. If you want to change the sanitizable content types, you can pass options when using Rack::UTF8Sanitizer.
 
 To add sanitizable content types to the list of defaults, pass the `additional_content_types` options when using Rack::UTF8Sanitizer, e.g.
 
@@ -78,7 +78,35 @@ config.middleware.insert 0, Rack::UTF8Sanitizer, except: [/HTTP_.+/]
 
 There are two built in strategies for handling invalid characters. The default strategy is `:replace`, which will cause any invalid characters to be replaces with the unicode replacement character (�). The second built in strategy is `:exception` which will cause an `EncodingError` exception to be raised if invalid characters are found (the exception can then be handled by another Rack middleware).
 
-An object that responds to `#call` and accepts the offending string with invalid characters as an argumant can also be passed as a `:strategy`. This is how you can define custom strategies.
+This is an example of handling the `:exception` strategy with additional middleware:
+
+```ruby
+require "./your/middleware/directory/utf8_sanitizer_exception_handler.rb"
+
+config.middleware.insert 0, Rack::UTF8SanitizerExceptionHandler
+config.middleware.insert_after Rack::UTF8SanitizerExceptionHandler, Rack::UTF8Sanitizer, strategy: :exception
+```
+
+Note: The exception handling middleware must be inserted before `Rack::UTF8Sanitizer`
+
+```ruby
+module Rack
+  class UTF8SanitizerExceptionHandler
+    def initialize(app)
+      @app = app
+    end
+
+    def call(env)
+      @app.call(env)
+    rescue EncodingError => exception
+      # OPTIONAL: Add error logging service of your choice here
+      return [400, {}, ["Bad Request"]]
+    end
+  end
+end
+```
+
+An object that responds to `#call` and accepts the offending string with invalid characters as an argument can also be passed as a `:strategy`. This is how you can define custom strategies.
 
 ```ruby
 config.middleware.insert 0, Rack::UTF8Sanitizer, strategy: :exception
