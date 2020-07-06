@@ -194,9 +194,10 @@ module Rack
     end
 
     def decode_string(input)
-      unescape_unreserved(
-        sanitize_string(input).
-          force_encoding(Encoding::ASCII_8BIT))
+      sanitize_string(
+        unescape_unreserved(
+          sanitize_string(input).
+            force_encoding(Encoding::ASCII_8BIT)))
     end
 
     # This regexp matches all 'unreserved' characters from RFC3986 (2.3),
