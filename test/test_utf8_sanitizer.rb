@@ -494,6 +494,71 @@ describe Rack::UTF8Sanitizer do
     end
   end
 
+  describe "with custom cleaner" do
+    def request_env
+      @plain_input = "foo \x00 bar".force_encoding('UTF-8')
+      {
+          "REQUEST_METHOD" => "POST",
+          "CONTENT_TYPE" => "application/json",
+          "HTTP_USER_AGENT" => @plain_input,
+          "rack.input" => @rack_input,
+      }
+    end
+
+    def sanitize_data(request_env = request_env())
+      @uri_input = "http://bar/foo+%00+bar".force_encoding('UTF-8')
+      @response_env = @app.(request_env)
+      sanitized_input = @response_env['rack.input'].read
+
+      yield sanitized_input if block_given?
+    end
+
+    it "calls a default cleaner (noop)" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env })
+
+      input = "foo=bla&quux=bar\x00"
+      @rack_input = StringIO.new input
+
+      env = request_env
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
+      end
+    end
+
+    it "calls the null_byte cleaner" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, cleaner: :null_byte)
+
+      input = "foo=bla&quux=bar\x00"
+      @rack_input = StringIO.new input
+
+      env = request_env
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should != input
+        sanitized_input.should == "foo=bla&quux=bar"
+      end
+    end
+
+    it "accepts a proc as a cleaner" do
+      truncate = -> input { input[0] }
+
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, cleaner: truncate)
+
+      input = "foo=bla&quux=bar\x00"
+      @rack_input = StringIO.new input
+
+      env = request_env
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == 'f' 
+      end
+    end
+  end
+
   describe "with custom strategy" do
     def request_env
       @plain_input = "foo bar лол".force_encoding('UTF-8')

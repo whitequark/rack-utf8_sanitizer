@@ -11,6 +11,7 @@ module Rack
     # options[:additional_content_types] Array
     def initialize(app, options={})
       @app = app
+      @cleaner = build_cleaner(options)
       @strategy = build_strategy(options)
       @sanitizable_content_types = options[:sanitizable_content_types]
       @sanitizable_content_types ||= SANITIZABLE_CONTENT_TYPES + (options[:additional_content_types] || [])
@@ -21,6 +22,15 @@ module Rack
     def call(env)
       @app.call(sanitize(env))
     end
+
+    DEFAULT_CLEANERS = {
+      noop: lambda do |input|
+        input
+      end,
+      null_byte: lambda do |input|
+        input.gsub("\x00", '')
+      end
+    }
 
     DEFAULT_STRATEGIES = {
       replace: lambda do |input|
@@ -86,6 +96,14 @@ module Rack
       return true if !@only.empty? && @only.none? { |matcher| rack_env_key[matcher] }
 
       false
+    end
+
+    def build_cleaner(options)
+      cleaner = options.fetch(:cleaner) { :noop }
+
+      return cleaner unless DEFAULT_CLEANERS.key?(cleaner)
+
+      DEFAULT_CLEANERS[cleaner]
     end
 
     def build_strategy(options)
@@ -239,11 +257,13 @@ module Rack
       if input.is_a? String
         input = input.dup.force_encoding(Encoding::UTF_8)
 
-        if input.valid_encoding?
-          input
-        else
-          @strategy.call(input)
-        end
+        @cleaner.call(
+          if input.valid_encoding?
+            input
+          else
+            @strategy.call(input)
+          end
+        )
       else
         input
       end
