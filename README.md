@@ -122,6 +122,26 @@ end
 config.middleware.insert 0, Rack::UTF8Sanitizer, strategy: replace_string
 ```
 
+### Cleaners
+
+There are two built in cleaners for custom sanitization. The default cleaner is `:noop`, which does nothing (for backwards-compatibility). The second built in cleaner is `:null_byte` which will remove null-bytes, to address security concerns.
+
+An object that responds to `#call` and accepts the sanitized string as an argument can also be passed as a `:cleaner`. This is how you can define custom cleaners.
+
+```ruby
+config.middleware.insert 0, Rack::UTF8Sanitizer, cleaner: :null_byte
+```
+
+```ruby
+replace_string = lambda do |input|
+  Rails.logger.warn('Replacing foo with bar in any input string')
+
+  input.gsub('foo', 'bar')
+end
+
+config.middleware.insert 0, Rack::UTF8Sanitizer, cleaner: replace_string
+```
+
 ## Contributing
 
 1. Fork it
