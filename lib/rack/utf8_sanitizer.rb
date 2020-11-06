@@ -6,6 +6,7 @@ require 'stringio'
 module Rack
   class UTF8Sanitizer
     StringIO = ::StringIO
+    BAD_REQUEST = [400, { "Content-Type" => "text/plain" }, ["Bad Request"]]
 
     # options[:sanitizable_content_types] Array
     # options[:additional_content_types] Array
@@ -19,7 +20,12 @@ module Rack
     end
 
     def call(env)
-      @app.call(sanitize(env))
+      begin
+        env = sanitize(env)
+      rescue EOFError
+        return BAD_REQUEST
+      end
+      @app.call(env)
     end
 
     DEFAULT_STRATEGIES = {

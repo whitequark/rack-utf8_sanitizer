@@ -205,6 +205,18 @@ describe Rack::UTF8Sanitizer do
       @response_env['rack.input'].close
     end
 
+    class BrokenIO < StringIO
+      def read
+        raise EOFError
+      end
+    end
+
+    it "returns HTTP 400 on EOF" do
+      @rack_input = BrokenIO.new
+      @response_env = @app.(request_env)
+      @response_env.should == [400, {"Content-Type"=>"text/plain"}, ["Bad Request"]]
+    end
+
     it "sanitizes StringIO rack.input" do
       input = "foo=bla&quux=bar"
       @rack_input = StringIO.new input
@@ -549,7 +561,7 @@ describe Rack::UTF8Sanitizer do
       sanitize_data(env) do |sanitized_input|
         sanitized_input.encoding.should == Encoding::UTF_8
         sanitized_input.should.be.valid_encoding
-        sanitized_input.should == 'replace' 
+        sanitized_input.should == 'replace'
       end
     end
   end
