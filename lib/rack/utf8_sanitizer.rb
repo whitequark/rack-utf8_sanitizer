@@ -250,9 +250,11 @@ module Rack
     # optimized from URI::RFC2396_Parser#escape
     def escape_unreserved(input)
       @unsafe_map ||= Hash.new do |table, us|
-        table[us] = us.each_byte.reduce('') do |tmp, uc|
+        encoded = us.each_byte.reduce('') do |tmp, uc|
           tmp << sprintf('%%%02X', uc)
         end
+        table[us] = encoded if us.bytesize <= 3
+        encoded
       end
       input.gsub(UNSAFE, @unsafe_map).force_encoding(Encoding::US_ASCII)
     end
