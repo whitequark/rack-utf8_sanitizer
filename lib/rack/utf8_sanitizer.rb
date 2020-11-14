@@ -205,9 +205,18 @@ module Rack
           force_encoding(Encoding::ASCII_8BIT))
     end
 
-    # This regexp matches all 'unreserved' characters from RFC3986 (2.3),
-    # plus all multibyte UTF-8 characters.
-    UNRESERVED_OR_UTF8 = /[A-Za-z0-9\-._~\x80-\xFF]/
+    # All 'unreserved' characters from RFC3986 (2.3)
+    UNRESERVED = [
+      '-'.ord,
+      '.'.ord,
+      '_'.ord,
+      ('A'.ord)..('Z'.ord),
+      ('a'.ord)..('z'.ord),
+      ('0'.ord)..('9'.ord)
+    ].map(&:freeze).freeze
+
+    # All multibyte UTF-8 octets
+    MULTIBYTE = (0x80..0xFF).freeze
 
     # RFC3986, 2.2 states that the characters from 'reserved' group must be
     # protected during normalization (which is what UTF8Sanitizer does).
@@ -215,15 +224,18 @@ module Rack
     # However, the regexp approach used by URI.unescape is not sophisticated
     # enough for our task.
     def unescape_unreserved(input)
-      input.gsub(/%([a-f\d]{2})/i) do |encoded|
-        decoded = $1.hex.chr
+      @percent_decoded_mapping ||= Hash.new do |table, encoded|
+        octet = encoded.slice(1, 2).hex
 
-        if decoded =~ UNRESERVED_OR_UTF8
-          decoded
+        case octet
+        when *UNRESERVED, MULTIBYTE
+          table[encoded] = octet.chr
         else
-          encoded
+          table[encoded] = encoded
         end
       end
+
+      input.gsub(/%\h\h/, @percent_decoded_mapping)
     end
 
     # This regexp matches unsafe characters, i.e. everything except 'reserved'
@@ -234,10 +246,15 @@ module Rack
     # See also URI::REGEXP::PATTERN::{UNRESERVED,RESERVED}.
     UNSAFE           = /[^\-_.!~*'()a-zA-Z\d;\/?:@&=+$,\[\]%]/
 
-    # Performs the reverse function of `unescape_unreserved`. Unlike
-    # the previous function, we can reuse the logic in URI#encode
+    # Performs the reverse function of `unescape_unreserved`. The logic here is
+    # optimized from URI::RFC2396_Parser#escape
     def escape_unreserved(input)
-      URI::DEFAULT_PARSER.escape(input, UNSAFE)
+      @unsafe_map ||= Hash.new do |table, us|
+        table[us] = us.each_byte.reduce('') do |tmp, uc|
+          tmp << "%#{uc.ord.to_s(16)}"
+        end
+      end
+      input.gsub(UNSAFE, @unsafe_map).force_encoding(Encoding::US_ASCII)
     end
 
     def sanitize_string(input)
