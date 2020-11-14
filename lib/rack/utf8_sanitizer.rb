@@ -251,7 +251,7 @@ module Rack
     def escape_unreserved(input)
       @unsafe_map ||= Hash.new do |table, us|
         table[us] = us.each_byte.reduce('') do |tmp, uc|
-          tmp << "%#{uc.ord.to_s(16)}"
+          tmp << sprintf('%%%02X', uc)
         end
       end
       input.gsub(UNSAFE, @unsafe_map).force_encoding(Encoding::US_ASCII)
