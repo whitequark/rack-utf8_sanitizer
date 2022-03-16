@@ -1,6 +1,7 @@
 # encoding:ascii-8bit
 
 require 'bacon/colored_output'
+require 'cgi'
 require 'rack/utf8_sanitizer'
 
 describe Rack::UTF8Sanitizer do
@@ -118,6 +119,7 @@ describe Rack::UTF8Sanitizer do
   describe "with valid, not percent-encoded UTF-8 URI input" do
     before do
       @uri_input   = "http://bar/foo+bar+лол".force_encoding('UTF-8')
+      @encoded     = "http://bar/foo+bar+#{CGI.escape("лол")}"
     end
 
     it "does not change URI-like entity (REQUEST_PATH)" do
@@ -126,7 +128,7 @@ describe Rack::UTF8Sanitizer do
 
       result.encoding.should == Encoding::US_ASCII
       result.should.be.valid_encoding
-      result.should == URI.encode(@uri_input)
+      result.should == @encoded
     end
   end
 
