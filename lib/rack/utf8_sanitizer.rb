@@ -232,7 +232,9 @@ module Rack
     # `unescape_unreserved` invocation.
     #
     # See also URI::REGEXP::PATTERN::{UNRESERVED,RESERVED}.
-    UNSAFE           = /[^\-_.!~*'()a-zA-Z\d;\/?:@&=+$,\[\]%]/
+    RFC3986_GEN_DELIMS = Regexp.escape(%(:/?[]@))
+    RFC3986_SUB_DELIMS = Regexp.escape(%(!$&'()*+,;=))
+    UNSAFE             = /[^#{RFC3986_GEN_DELIMS}#{RFC3986_SUB_DELIMS}a-zA-Z\d\-._~%]/x
 
     # Performs the reverse function of `unescape_unreserved`. Unlike
     # the previous function, we can reuse the logic in URI#encode
