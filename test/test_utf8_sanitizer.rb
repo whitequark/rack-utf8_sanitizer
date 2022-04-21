@@ -76,6 +76,15 @@ describe Rack::UTF8Sanitizer do
     behaves_like :does_sanitize_uri
   end
 
+  describe "with valid URI input containing a URI fragment" do
+    it "does not percent-encode the fragment" do
+      env = @app.({ 'HTTP_REFERER' => 'http://bar/foo/#qux' })
+      result = env['HTTP_REFERER']
+
+      result.should == 'http://bar/foo/#qux'
+    end
+  end
+
   shared :identity_plain do
     it "does not change plaintext entity (HTTP_USER_AGENT)" do
       env    = @app.({ "HTTP_USER_AGENT" => @plain_input })
