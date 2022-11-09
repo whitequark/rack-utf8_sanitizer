@@ -243,6 +243,7 @@ module Rack
     def sanitize_string(input)
       if input.is_a? String
         input = input.dup.force_encoding(Encoding::UTF_8)
+        strip_invalid_characters(input)
 
         if input.valid_encoding?
           input
@@ -268,6 +269,19 @@ module Rack
     def strip_byte_order_mark(input)
       return input unless input.start_with?(UTF8_BOM)
       input.byteslice(UTF8_BOM_SIZE..-1)
+    end
+
+    UNDEFINED_CHARACTER = "\uFFFD".freeze
+    INVALID_CHARACTERS = [
+      "\u0000".force_encoding('UTF-8').freeze,
+      "\x00".force_encoding('UTF-8').freeze
+    ].freeze
+
+    def strip_invalid_characters(input)
+      INVALID_CHARACTERS.each do |invalid_character|
+        input.gsub!(invalid_character, UNDEFINED_CHARACTER)
+      end
+      input
     end
   end
 end

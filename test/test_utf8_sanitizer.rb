@@ -26,6 +26,8 @@ describe Rack::UTF8Sanitizer do
 
       result.encoding.should == Encoding::US_ASCII
       result.should.be.valid_encoding
+      result.should.not.include? "\x00".force_encoding('UTF-8')
+      result.should.not.include? "\u0000".force_encoding('UTF-8')
     end
   end
 
@@ -37,6 +39,8 @@ describe Rack::UTF8Sanitizer do
 
       result.encoding.should == Encoding::US_ASCII
       result.should.be.valid_encoding
+      result.should.not.include? "\x00".force_encoding('UTF-8')
+      result.should.not.include? "\u0000".force_encoding('UTF-8')
     end
   end
 
@@ -55,6 +59,28 @@ describe Rack::UTF8Sanitizer do
       @uri_input   = "http://bar/foo%E0\xe0".force_encoding('UTF-8')
     end
 
+    behaves_like :does_sanitize_uri
+  end
+
+  describe "with UTF-8 null byte \x00 input" do
+    before do
+      # null byte
+      @plain_input = "foo\x00".force_encoding('UTF-8')
+      @uri_input   = "http://bar/foo\x00".force_encoding('UTF-8')
+    end
+
+    behaves_like :does_sanitize_plain
+    behaves_like :does_sanitize_uri
+  end
+
+  describe "with UTF-8 null byte \u0000 input" do
+    before do
+      # null byte
+      @plain_input = "foo\u0000".force_encoding('UTF-8')
+      @uri_input   = "http://bar/foo\u0000".force_encoding('UTF-8')
+    end
+
+    behaves_like :does_sanitize_plain
     behaves_like :does_sanitize_uri
   end
 
