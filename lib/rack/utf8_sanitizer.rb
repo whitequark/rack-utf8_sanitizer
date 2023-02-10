@@ -43,7 +43,7 @@ module Rack
       end
     }.freeze
 
-    # http://rack.rubyforge.org/doc/SPEC.html
+    # https://github.com/rack/rack/blob/main/SPEC.rdoc
     URI_FIELDS  = %w(
         SCRIPT_NAME
         REQUEST_PATH REQUEST_URI PATH_INFO
