@@ -337,6 +337,61 @@ describe Rack::UTF8Sanitizer do
         @response_env["CONTENT_LENGTH"].should == sanitized_input.bytesize.to_s
       end
     end
+
+    it "does not sanitize null bytes by default" do
+      input =  "foo=bla&quux=bar%00"
+      @rack_input = StringIO.new input
+
+      sanitize_form_data do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
+      end
+    end
+
+    it "optionally sanitizes null bytes with the replace strategy" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitize_null_bytes: true)
+      input =  "foo=bla&quux=bar\x00"
+      @rack_input = StringIO.new input
+
+      sanitize_form_data do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == "foo=bla&quux=bar"
+      end
+    end
+
+    it "optionally sanitizes encoded null bytes with the replace strategy" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitize_null_bytes: true)
+      input =  "foo=bla&quux=bar%00"
+      @rack_input = StringIO.new input
+
+      sanitize_form_data do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == "foo=bla&quux=bar"
+      end
+    end
+
+    it "optionally raises on null bytes with the exception strategy" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitize_null_bytes: true, strategy: :exception)
+      input =  "foo=bla&quux=bar\x00"
+      @rack_input = StringIO.new input
+
+      should.raise(Rack::UTF8Sanitizer::NullByteInString) do
+        sanitize_form_data
+      end
+    end
+
+    it "optionally raises on encoded null bytes with the exception strategy" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitize_null_bytes: true, strategy: :exception)
+      input =  "foo=bla&quux=bar%00"
+      @rack_input = StringIO.new input
+
+      should.raise(Rack::UTF8Sanitizer::NullByteInString) do
+        sanitize_form_data
+      end
+    end
   end
 
   describe "with custom content-type" do
@@ -552,11 +607,33 @@ describe Rack::UTF8Sanitizer do
     end
 
     it "accepts a proc as a strategy" do
-      truncate = -> input { 'replace'.force_encoding(Encoding::UTF_8) }
+      truncate = -> (input, sanitize_null_bytes:) do
+        sanitize_null_bytes.should == false
+        'replace'.force_encoding(Encoding::UTF_8)
+      end
 
       @app = Rack::UTF8Sanitizer.new(-> env { env }, strategy: truncate)
 
       input = "foo=bla&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      env = request_env
+      sanitize_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == 'replace'
+      end
+    end
+
+    it "accepts a proc as a strategy and passes along sanitize_null_bytes" do
+      truncate = -> (input, sanitize_null_bytes:) do
+        sanitize_null_bytes.should == true
+        'replace'.force_encoding(Encoding::UTF_8)
+      end
+
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitize_null_bytes: true, strategy: truncate)
+      input = "foo=bla&quux=bar\x00"
+
       @rack_input = StringIO.new input
 
       env = request_env
