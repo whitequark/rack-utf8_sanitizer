@@ -113,7 +113,7 @@ config.middleware.insert 0, Rack::UTF8Sanitizer, strategy: :exception
 ```
 
 ```ruby
-replace_string = lambda do |_invalid|
+replace_string = lambda do |_invalid, sanitize_null_bytes: false|
   Rails.logger.warn('Replacing invalid string')
 
   '<Bad Encoding>'.freeze
@@ -121,6 +121,10 @@ end
 
 config.middleware.insert 0, Rack::UTF8Sanitizer, strategy: replace_string
 ```
+
+### Sanitizing Null Bytes
+
+While null bytes are valid UTF-8, it can be useful to further restrict the valid character set to exclude null bytes. For example, PostgreSQL text columns do not allow storing null bytes. Passing `sanitize_null_bytes: true` in the configuration hash enables sanitizing null bytes, and the two built-in strategies both support this feature. Custom strategies should accept a keyword argument `sanitize_null_bytes` containing this configuration value.
 
 ## Contributing
 
