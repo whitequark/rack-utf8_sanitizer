@@ -392,6 +392,16 @@ describe Rack::UTF8Sanitizer do
         sanitize_form_data
       end
     end
+
+    it "gives precedence to encoding errors with the exception strategy and null byte sanitisation" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitize_null_bytes: true, strategy: :exception)
+      input = "foo=bla\x00&quux=bar\xED"
+      @rack_input = StringIO.new input
+
+      should.raise(EncodingError) do
+        sanitize_form_data
+      end
+    end
   end
 
   describe "with custom content-type" do
