@@ -45,12 +45,13 @@ module Rack
         input
       end,
       exception: lambda do |input, sanitize_null_bytes: false|
-        if sanitize_null_bytes && input =~ NULL_BYTE_REGEX
-          raise NullByteInString
-        end
         input.
           force_encoding(Encoding::ASCII_8BIT).
           encode!(Encoding::UTF_8)
+        if sanitize_null_bytes && input =~ NULL_BYTE_REGEX
+          raise NullByteInString
+        end
+        input
       end
     }.freeze
 
