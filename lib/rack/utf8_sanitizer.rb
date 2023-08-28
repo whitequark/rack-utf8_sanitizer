@@ -34,14 +34,15 @@ module Rack
 
     DEFAULT_STRATEGIES = {
       replace: lambda do |input, sanitize_null_bytes: false|
-        if sanitize_null_bytes
-          input = input.gsub(NULL_BYTE_REGEX, "")
-        end
         input.
           force_encoding(Encoding::ASCII_8BIT).
           encode!(Encoding::UTF_8,
                   invalid: :replace,
                   undef:   :replace)
+        if sanitize_null_bytes
+          input = input.gsub(NULL_BYTE_REGEX, "")
+        end
+        input
       end,
       exception: lambda do |input, sanitize_null_bytes: false|
         if sanitize_null_bytes && input =~ NULL_BYTE_REGEX
