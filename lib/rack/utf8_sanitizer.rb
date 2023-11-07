@@ -126,7 +126,10 @@ module Rack
       uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
 
       if env['rack.input']
-        sanitized_input = sanitize_io(env['rack.input'], uri_encoded)
+        content_length = if env['CONTENT_LENGTH']
+          env['CONTENT_LENGTH'].to_i
+        end
+        sanitized_input = sanitize_io(env['rack.input'], uri_encoded, content_length)
 
         env['rack.input'] = sanitized_input
         env['CONTENT_LENGTH'] &&= sanitized_input.size.to_s
@@ -168,8 +171,12 @@ module Rack
       end
     end
 
-    def sanitize_io(io, uri_encoded = false)
-      input = io.read
+    def sanitize_io(io, uri_encoded = false, content_length = nil)
+      input = if content_length && content_length >= 0
+        io.read(content_length)
+      else
+        io.read
+      end
       sanitized_input = sanitize_string(strip_byte_order_mark(input))
       if uri_encoded
         sanitized_input = sanitize_uri_encoded_string(sanitized_input).
