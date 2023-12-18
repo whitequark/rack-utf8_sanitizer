@@ -252,6 +252,18 @@ describe Rack::UTF8Sanitizer do
       end
     end
 
+    it "sanitizes the rack body if the charset is present and utf-8" do
+      input =  "name=#{CGI.escape("まつもと")}"
+      @rack_input = StringIO.new input
+
+      env = request_env.update('CONTENT_TYPE' => "application/x-www-form-urlencoded; charset=utf-8")
+      sanitize_form_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
+      end
+    end
+
     it "strip UTF-8 BOM from StringIO rack.input" do
       input = %(\xef\xbb\xbf{"Hello": "World"})
       @rack_input = StringIO.new input
@@ -322,6 +334,18 @@ describe Rack::UTF8Sanitizer do
       env = request_env.update('CONTENT_TYPE' => '')
       sanitize_form_data(env) do |sanitized_input|
         sanitized_input.encoding.should == Encoding::ASCII_8BIT
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == input
+      end
+    end
+
+    it "does not sanitize the rack body if the charset is present and not utf-8" do
+      input = "name=".encode("Shift_JIS") + CGI.escape("まつもと".encode("Shift_JIS", "UTF-8"))
+      @rack_input = StringIO.new input
+
+      env = request_env.update('CONTENT_TYPE' => "application/x-www-form-urlencoded; charset=Shift_JIS")
+      sanitize_form_data(env) do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::SHIFT_JIS
         sanitized_input.should.be.valid_encoding
         sanitized_input.should == input
       end
