@@ -2,6 +2,7 @@
 
 require 'uri'
 require 'stringio'
+require 'rack/request'
 
 module Rack
   class UTF8Sanitizer
@@ -126,6 +127,10 @@ module Rack
         end
       end
       return unless @sanitizable_content_types.any? {|type| content_type == type }
+
+      charset = Rack::Request.new(env).content_charset
+      return if charset && charset.downcase != 'utf-8'
+
       uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
 
       if env['rack.input']
