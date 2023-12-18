@@ -116,19 +116,11 @@ module Rack
     end
 
     def sanitize_rack_input(env)
-      # https://github.com/rack/rack/blob/master/lib/rack/request.rb#L42
-      # Logic borrowed from Rack::Request#media_type,#media_type_params,#content_charset
-      # Ignoring charset in content type.
-      if content_type = env['CONTENT_TYPE']
-        content_type = content_type.split(/[;,]/, 2).first
-        if content_type
-          content_type.strip!
-          content_type.downcase!
-        end
-      end
+      request = Rack::Request.new(env)
+      content_type = request.media_type
       return unless @sanitizable_content_types.any? {|type| content_type == type }
 
-      charset = Rack::Request.new(env).content_charset
+      charset = request.content_charset
       return if charset && charset.downcase != 'utf-8'
 
       uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
