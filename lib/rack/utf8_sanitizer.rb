@@ -49,7 +49,7 @@ module Rack
         input.
           force_encoding(Encoding::ASCII_8BIT).
           encode!(Encoding::UTF_8)
-        if sanitize_null_bytes && input =~ NULL_BYTE_REGEX
+        if sanitize_null_bytes && NULL_BYTE_REGEX.match?(input)
           raise NullByteInString
         end
         input
