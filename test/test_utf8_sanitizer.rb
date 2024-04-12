@@ -219,6 +219,16 @@ describe Rack::UTF8Sanitizer do
       @response_env.should == [400, {"Content-Type"=>"text/plain"}, ["Bad Request"]]
     end
 
+    it "Bad Request response can safety be mutated" do
+      @rack_input = BrokenIO.new
+      response_env = @app.(request_env)
+      response_env.should == [400, {"Content-Type"=>"text/plain"}, ["Bad Request"]]
+      response_env[1]["Set-Cookie"] = "you_are_admin"
+
+      response_env = @app.(request_env)
+      response_env[1]["Set-Cookie"].should == nil
+    end
+
     it "sanitizes StringIO rack.input" do
       input = "foo=bla&quux=bar"
       @rack_input = StringIO.new input

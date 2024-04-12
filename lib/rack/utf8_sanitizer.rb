@@ -7,7 +7,6 @@ require 'rack/request'
 module Rack
   class UTF8Sanitizer
     StringIO = ::StringIO
-    BAD_REQUEST = [400, { "Content-Type" => "text/plain" }, ["Bad Request"]]
     NULL_BYTE_REGEX = /\x00/.freeze
 
     class NullByteInString < StandardError; end
@@ -28,7 +27,7 @@ module Rack
       begin
         env = sanitize(env)
       rescue EOFError
-        return BAD_REQUEST
+        return [400, { "Content-Type" => "text/plain" }, ["Bad Request"]]
       end
       @app.call(env)
     end
