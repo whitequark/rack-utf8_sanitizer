@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+# frozen_string_literal: true
 
 Gem::Specification.new do |gem|
   gem.name          = "rack-utf8_sanitizer"
@@ -6,8 +7,8 @@ Gem::Specification.new do |gem|
   gem.authors       = ["whitequark"]
   gem.license       = "MIT"
   gem.email         = ["whitequark@whitequark.org"]
-  gem.description   = %{Rack::UTF8Sanitizer is a Rack middleware which cleans up } <<
-                      %{invalid UTF8 characters in request URI and headers.}
+  gem.description   = "Rack::UTF8Sanitizer is a Rack middleware which cleans up " \
+                      "invalid UTF8 characters in request URI and headers."
   gem.summary       = gem.description
   gem.homepage      = "http://github.com/whitequark/rack-utf8_sanitizer"
 

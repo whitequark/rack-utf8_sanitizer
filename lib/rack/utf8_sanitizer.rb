@@ -1,4 +1,5 @@
 # encoding: ascii-8bit
+# frozen_string_literal: true
 
 require 'uri'
 require 'stringio'
@@ -64,20 +65,20 @@ module Rack
         ORIGINAL_FULLPATH
         ORIGINAL_SCRIPT_NAME
         SERVER_NAME
-    ).map(&:freeze).freeze
+    ).freeze
 
     SANITIZABLE_CONTENT_TYPES = %w(
       text/plain
       application/x-www-form-urlencoded
       application/json
       text/javascript
-    ).map(&:freeze).freeze
+    ).freeze
 
     URI_ENCODED_CONTENT_TYPES = %w(
       application/x-www-form-urlencoded
-    ).map(&:freeze).freeze
+    ).freeze
 
-    HTTP_ = 'HTTP_'.freeze
+    HTTP_ = 'HTTP_'
 
     def sanitize(env)
       sanitize_rack_input(env)
@@ -280,7 +281,7 @@ module Rack
       end
     end
 
-    UTF8_BOM = "\xef\xbb\xbf".force_encoding(Encoding::BINARY).freeze
+    UTF8_BOM = "\xef\xbb\xbf".dup.force_encoding(Encoding::BINARY).freeze
     UTF8_BOM_SIZE = UTF8_BOM.bytesize
 
     def strip_byte_order_mark(input)
