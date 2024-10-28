@@ -8,12 +8,13 @@ module Rack
   class UTF8Sanitizer
     StringIO = ::StringIO
     NULL_BYTE_REGEX = /\x00/.freeze
+    NULL_BYTE_STRING_REGEX = Regexp.new('\\\u0000').freeze
 
     class NullByteInString < StandardError; end
 
     # options[:sanitizable_content_types] Array
     # options[:additional_content_types] Array
-    def initialize(app, options={})
+    def initialize(app, options = {})
       @app = app
       @strategy = build_strategy(options)
       @sanitizable_content_types = options[:sanitizable_content_types]
@@ -27,55 +28,54 @@ module Rack
       begin
         env = sanitize(env)
       rescue EOFError
-        return [400, { "Content-Type" => "text/plain" }, ["Bad Request"]]
+        return [400, { 'Content-Type' => 'text/plain' }, ['Bad Request']]
       end
       @app.call(env)
     end
 
     DEFAULT_STRATEGIES = {
       replace: lambda do |input, sanitize_null_bytes: false|
-        input.
-          force_encoding(Encoding::ASCII_8BIT).
-          encode!(Encoding::UTF_8,
-                  invalid: :replace,
-                  undef:   :replace)
-        if sanitize_null_bytes
-          input = input.gsub(NULL_BYTE_REGEX, "")
-        end
+        input
+          .force_encoding(Encoding::ASCII_8BIT)
+          .encode!(Encoding::UTF_8,
+                   invalid: :replace,
+                   undef: :replace)
+        input = input.gsub(NULL_BYTE_REGEX, '').gsub(NULL_BYTE_STRING_REGEX, '') if sanitize_null_bytes
         input
       end,
       exception: lambda do |input, sanitize_null_bytes: false|
-        input.
-          force_encoding(Encoding::ASCII_8BIT).
-          encode!(Encoding::UTF_8)
-        if sanitize_null_bytes && NULL_BYTE_REGEX.match?(input)
+        input
+          .force_encoding(Encoding::ASCII_8BIT)
+          .encode!(Encoding::UTF_8)
+        if sanitize_null_bytes && (NULL_BYTE_REGEX.match?(input) || NULL_BYTE_STRING_REGEX.match?(input))
           raise NullByteInString
         end
+
         input
       end
     }.freeze
 
     # https://github.com/rack/rack/blob/main/SPEC.rdoc
-    URI_FIELDS  = %w(
-        SCRIPT_NAME
-        REQUEST_PATH REQUEST_URI PATH_INFO
-        QUERY_STRING
-        HTTP_REFERER
-        ORIGINAL_FULLPATH
-        ORIGINAL_SCRIPT_NAME
-        SERVER_NAME
-    ).map(&:freeze).freeze
+    URI_FIELDS = %w[
+      SCRIPT_NAME
+      REQUEST_PATH REQUEST_URI PATH_INFO
+      QUERY_STRING
+      HTTP_REFERER
+      ORIGINAL_FULLPATH
+      ORIGINAL_SCRIPT_NAME
+      SERVER_NAME
+    ].map(&:freeze).freeze
 
-    SANITIZABLE_CONTENT_TYPES = %w(
+    SANITIZABLE_CONTENT_TYPES = %w[
       text/plain
       application/x-www-form-urlencoded
       application/json
       text/javascript
-    ).map(&:freeze).freeze
+    ].map(&:freeze).freeze
 
-    URI_ENCODED_CONTENT_TYPES = %w(
+    URI_ENCODED_CONTENT_TYPES = %w[
       application/x-www-form-urlencoded
-    ).map(&:freeze).freeze
+    ].map(&:freeze).freeze
 
     HTTP_ = 'HTTP_'.freeze
 
@@ -86,13 +86,11 @@ module Rack
         next if skip?(key)
 
         if URI_FIELDS.include?(key)
-          env[key] = transfer_frozen(value,
-              sanitize_uri_encoded_string(value))
+          env[key] = transfer_frozen(value, sanitize_uri_encoded_string(value))
         elsif key.to_s.start_with?(HTTP_)
           # Just sanitize the headers and leave them in UTF-8. There is
           # no reason to have UTF-8 in headers, but if it's valid, let it be.
-          env[key] = transfer_frozen(value,
-              sanitize_string(value))
+          env[key] = transfer_frozen(value, sanitize_string(value))
         end
       end
     end
@@ -117,19 +115,19 @@ module Rack
     def sanitize_rack_input(env)
       request = Rack::Request.new(env)
       content_type = request.media_type
-      return unless @sanitizable_content_types.any? {|type| content_type == type }
+      return unless @sanitizable_content_types.any? { |type| content_type == type }
 
       charset = request.content_charset
       return if charset && charset.downcase != 'utf-8'
 
-      uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
+      uri_encoded = URI_ENCODED_CONTENT_TYPES.any? { |type| content_type == type }
 
-      if env['rack.input']
-        sanitized_input = sanitize_io(env['rack.input'], uri_encoded, env['CONTENT_LENGTH']&.to_i)
+      return unless env['rack.input']
 
-        env['rack.input'] = sanitized_input
-        env['CONTENT_LENGTH'] &&= sanitized_input.size.to_s
-      end
+      sanitized_input = sanitize_io(env['rack.input'], uri_encoded, env['CONTENT_LENGTH']&.to_i)
+
+      env['rack.input'] = sanitized_input
+      env['CONTENT_LENGTH'] &&= sanitized_input.size.to_s
     end
 
     # Modeled after Rack::RewindableInput
@@ -169,14 +167,14 @@ module Rack
 
     def sanitize_io(io, uri_encoded = false, content_length = nil)
       input = if content_length && content_length >= 0
-        io.read(content_length)
-      else
-        io.read
-      end
+                io.read(content_length)
+              else
+                io.read
+              end
       sanitized_input = sanitize_string(strip_byte_order_mark(input))
       if uri_encoded
-        sanitized_input = sanitize_uri_encoded_string(sanitized_input).
-          force_encoding(Encoding::UTF_8)
+        sanitized_input = sanitize_uri_encoded_string(sanitized_input)
+                          .force_encoding(Encoding::UTF_8)
       end
       sanitized_input = transfer_frozen(input, sanitized_input)
       SanitizedRackInput.new(io, StringIO.new(sanitized_input))
@@ -191,9 +189,9 @@ module Rack
       return unless env['HTTP_COOKIE']
 
       env['HTTP_COOKIE'] = env['HTTP_COOKIE']
-        .split(/[;,] */n)
-        .map { |cookie| sanitize_uri_encoded_string(cookie) }
-        .join('; ')
+                           .split(/[;,] */n)
+                           .map { |cookie| sanitize_uri_encoded_string(cookie) }
+                           .join('; ')
     end
 
     # URI.encode/decode expect the input to be in ASCII-8BIT.
@@ -206,19 +204,22 @@ module Rack
     # The result is guaranteed to be UTF-8-safe.
     def sanitize_uri_encoded_string(input)
       return input if input.nil?
+
       decoded_value = decode_string(input)
       reencode_string(decoded_value)
     end
 
     def reencode_string(decoded_value)
       escape_unreserved(
-        sanitize_string(decoded_value))
+        sanitize_string(decoded_value)
+      )
     end
 
     def decode_string(input)
       unescape_unreserved(
-        sanitize_string(input).
-          force_encoding(Encoding::ASCII_8BIT))
+        sanitize_string(input)
+          .force_encoding(Encoding::ASCII_8BIT)
+      )
     end
 
     # This regexp matches all 'unreserved' characters from RFC3986 (2.3),
@@ -233,7 +234,7 @@ module Rack
     # enough for our task.
     def unescape_unreserved(input)
       input.gsub(/%([a-f\d]{2})/i) do |encoded|
-        decoded = $1.hex.chr
+        decoded = ::Regexp.last_match(1).hex.chr
 
         decodable_regex = @sanitize_null_bytes ? UNRESERVED_OR_UTF8_OR_NULL : UNRESERVED_OR_UTF8
         if decoded =~ decodable_regex
@@ -250,7 +251,7 @@ module Rack
     # `unescape_unreserved` invocation.
     #
     # See also URI::REGEXP::PATTERN::{UNRESERVED,RESERVED}.
-    UNSAFE           = /[^\-_.!~*'()a-zA-Z\d;\/?:@&=+$,\[\]%]/
+    UNSAFE = %r{[^\-_.!~*'()a-zA-Z\d;/?:@&=+$,\[\]%]}.freeze
 
     # Performs the reverse function of `unescape_unreserved`. Unlike
     # the previous function, we can reuse the logic in URI#encode
@@ -262,7 +263,8 @@ module Rack
       if input.is_a? String
         input = input.dup.force_encoding(Encoding::UTF_8)
 
-        if input.valid_encoding? && !(@sanitize_null_bytes && input =~ NULL_BYTE_REGEX)
+        if input.valid_encoding? &&
+           !(@sanitize_null_bytes && (NULL_BYTE_REGEX.match?(input) || NULL_BYTE_STRING_REGEX.match?(input)))
           input
         else
           @strategy.call(input, sanitize_null_bytes: @sanitize_null_bytes)
@@ -285,6 +287,7 @@ module Rack
 
     def strip_byte_order_mark(input)
       return input unless input.start_with?(UTF8_BOM)
+
       input.byteslice(UTF8_BOM_SIZE..-1)
     end
   end
