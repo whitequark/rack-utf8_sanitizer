@@ -450,6 +450,21 @@ describe Rack::UTF8Sanitizer do
     end
   end
 
+  describe "with a non-supported-by-Rack content-type" do
+    def request_env
+      {
+          "REQUEST_METHOD" => "GET",
+          "CONTENT_TYPE" => "application/json;;charset=utf-8", # double `;`
+          "rack.input" => StringIO.new,
+      }
+    end
+
+    it "does not fail parsing request.content_charset" do
+      response_env = @app.(request_env)
+      response_env['CONTENT_TYPE'].should == "application/json;;charset=utf-8"
+    end
+  end
+
   describe "with custom content-type" do
     def request_env
       {

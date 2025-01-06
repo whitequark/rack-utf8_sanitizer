@@ -120,7 +120,7 @@ module Rack
       content_type = request.media_type
       return unless @sanitizable_content_types.any? {|type| content_type == type }
 
-      charset = request.content_charset
+      charset = request.content_charset rescue nil # pending https://github.com/rack/rack/pull/2273
       return if charset && charset.downcase != 'utf-8'
 
       uri_encoded = URI_ENCODED_CONTENT_TYPES.any? {|type| content_type == type}
