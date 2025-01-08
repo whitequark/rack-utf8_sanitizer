@@ -3,14 +3,14 @@
 
 Gem::Specification.new do |gem|
   gem.name          = "rack-utf8_sanitizer"
-  gem.version       = '1.9.1'
-  gem.authors       = ["whitequark"]
+  gem.version       = '1.10.0'
+  gem.authors       = ["Catherine"]
   gem.license       = "MIT"
   gem.email         = ["whitequark@whitequark.org"]
   gem.description   = "Rack::UTF8Sanitizer is a Rack middleware which cleans up " \
                       "invalid UTF8 characters in request URI and headers."
   gem.summary       = gem.description
-  gem.homepage      = "http://github.com/whitequark/rack-utf8_sanitizer"
+  gem.homepage      = "https://github.com/whitequark/rack-utf8_sanitizer"
 
   gem.files         = `git ls-files`.split($/)
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
