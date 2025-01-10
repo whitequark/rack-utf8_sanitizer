@@ -256,7 +256,11 @@ module Rack
     # Performs the reverse function of `unescape_unreserved`. Unlike
     # the previous function, we can reuse the logic in URI#encode
     def escape_unreserved(input)
-      URI::RFC2396_PARSER.escape(input, UNSAFE)
+      if Object.const_defined?("URI::RFC2396_PARSER")
+        URI::RFC2396_PARSER.escape(input, UNSAFE)
+      else
+        URI::DEFAULT_PARSER.escape(input, UNSAFE)
+      end
     end
 
     def sanitize_string(input)
