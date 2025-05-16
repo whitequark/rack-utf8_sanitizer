@@ -52,11 +52,15 @@ The default content types to be sanitized are 'text/plain', 'application/x-www-f
 
 To add sanitizable content types to the list of defaults, pass the `additional_content_types` options when using Rack::UTF8Sanitizer, e.g.
 
-    config.middleware.insert 0, Rack::UTF8Sanitizer, additional_content_types: ['application/vnd.api+json']
+``` ruby
+config.middleware.insert 0, Rack::UTF8Sanitizer, additional_content_types: ['application/vnd.api+json']
+```
 
 To explicitly set sanitizable content types and override the defaults, use the `sanitizable_content_types` option:
 
-    config.middleware.insert 0, Rack::UTF8Sanitizer, sanitizable_content_types: ['application/vnd.api+json']
+``` ruby
+config.middleware.insert 0, Rack::UTF8Sanitizer, sanitizable_content_types: ['application/vnd.api+json']
+```
 
 ### Whitelist/Blacklist Rack Env Keys
 
