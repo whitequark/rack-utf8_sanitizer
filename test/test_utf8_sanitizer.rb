@@ -245,6 +245,12 @@ describe Rack::UTF8Sanitizer do
       response_env[1]["Set-Cookie"].should == nil
     end
 
+    it "returns HTTP 400 if CONTENT_LENGTH is larger than actual length of rack.input" do
+      @rack_input = StringIO.new("")
+      response_env = @app.(request_env.merge("CONTENT_LENGTH" => (@rack_input.length + 1).to_s))
+      response_env.should == [400, {"Content-Type"=>"text/plain"}, ["Bad Request"]]
+    end
+
     it "sanitizes StringIO rack.input" do
       input = "foo=bla&quux=bar"
       @rack_input = StringIO.new input

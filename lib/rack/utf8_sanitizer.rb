@@ -10,6 +10,7 @@ module Rack
     StringIO = ::StringIO
     NULL_BYTE_REGEX = /\x00/.freeze
 
+    class InvalidStream < IOError; end
     class NullByteInString < StandardError; end
 
     # options[:sanitizable_content_types] Array
@@ -27,7 +28,7 @@ module Rack
     def call(env)
       begin
         env = sanitize(env)
-      rescue EOFError
+      rescue EOFError, InvalidStream
         return [400, { "Content-Type" => "text/plain" }, ["Bad Request"]]
       end
       @app.call(env)
@@ -174,6 +175,7 @@ module Rack
       else
         io.read
       end
+      raise InvalidStream if input.nil?
       sanitized_input = sanitize_string(strip_byte_order_mark(input))
       if uri_encoded
         sanitized_input = sanitize_uri_encoded_string(sanitized_input).
