@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v1.11.0 (2025-12-04)
+-------------------------
+
+Bugs fixed:
+
+  * Return HTTP 400 when Content-Length is too large (Benjamin Quorning, #103)
 
 v1.10.1 (2025-01-10)
 -------------------------
