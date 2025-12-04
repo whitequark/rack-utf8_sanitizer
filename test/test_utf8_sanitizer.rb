@@ -417,6 +417,18 @@ describe Rack::UTF8Sanitizer do
       end
     end
 
+    it "optionally sanitizes null bytes plain string with the replace strategy" do
+      @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitize_null_bytes: true)
+      input = "foo=bla\xED&quux=bar" + '\u0000'
+      @rack_input = StringIO.new input
+
+      sanitize_form_data do |sanitized_input|
+        sanitized_input.encoding.should == Encoding::UTF_8
+        sanitized_input.should.be.valid_encoding
+        sanitized_input.should == "foo=bla%EF%BF%BD&quux=bar"
+      end
+    end
+
     it "optionally sanitizes encoded null bytes with the replace strategy" do
       @app = Rack::UTF8Sanitizer.new(-> env { env }, sanitize_null_bytes: true)
       input = "foo=bla%ED&quux=bar%00"
