@@ -9,6 +9,7 @@ module Rack
   class UTF8Sanitizer
     StringIO = ::StringIO
     NULL_BYTE_REGEX = /\x00/.freeze
+    NULL_BYTE_STRING_REGEX = Regexp.new('\\\u0000').freeze
 
     class InvalidStream < IOError; end
     class NullByteInString < StandardError; end
@@ -42,7 +43,7 @@ module Rack
                   invalid: :replace,
                   undef:   :replace)
         if sanitize_null_bytes
-          input = input.gsub(NULL_BYTE_REGEX, "")
+          input = input.gsub(NULL_BYTE_REGEX, "").gsub(NULL_BYTE_STRING_REGEX, '')
         end
         input
       end,
@@ -50,7 +51,7 @@ module Rack
         input.
           force_encoding(Encoding::ASCII_8BIT).
           encode!(Encoding::UTF_8)
-        if sanitize_null_bytes && NULL_BYTE_REGEX.match?(input)
+        if sanitize_null_bytes && (NULL_BYTE_REGEX.match?(input) || NULL_BYTE_STRING_REGEX.match?(input))
           raise NullByteInString
         end
         input
@@ -269,7 +270,8 @@ module Rack
       if input.is_a? String
         input = input.dup.force_encoding(Encoding::UTF_8)
 
-        if input.valid_encoding? && !(@sanitize_null_bytes && input =~ NULL_BYTE_REGEX)
+        if input.valid_encoding? &&
+          !(@sanitize_null_bytes && (NULL_BYTE_REGEX.match?(input) || NULL_BYTE_STRING_REGEX.match?(input)))
           input
         else
           @strategy.call(input, sanitize_null_bytes: @sanitize_null_bytes)
