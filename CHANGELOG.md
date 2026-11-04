@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Unreleased
+-------------------------
+
+Bugs fixed:
+
+  * Sanitize `CONTENT_TYPE`, which has no `HTTP_` prefix and was skipped; this
+    also avoids an `ArgumentError` when parsing an invalid one for the body
+
 v1.11.0 (2025-12-04)
 -------------------------
 

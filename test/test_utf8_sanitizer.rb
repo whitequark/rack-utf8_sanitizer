@@ -51,6 +51,56 @@ describe Rack::UTF8Sanitizer do
     behaves_like :does_sanitize_uri
   end
 
+  describe "with invalid UTF-8 in CONTENT_TYPE" do
+    before do
+      @content_type = "text/plain\xFF".dup.force_encoding('UTF-8')
+    end
+
+    it "sanitizes CONTENT_TYPE" do
+      env    = @app.({ "CONTENT_TYPE" => @content_type })
+      result = env["CONTENT_TYPE"]
+
+      result.encoding.should == Encoding::UTF_8
+      result.should.be.valid_encoding
+    end
+
+    it "sanitizes CONTENT_TYPE before parsing it for the body" do
+      env = @app.({ "CONTENT_TYPE" => @content_type,
+                    "rack.input"   => StringIO.new("foo\xFF") })
+
+      env["CONTENT_TYPE"].should.be.valid_encoding
+      env["rack.input"].read.should.be.valid_encoding
+    end
+
+    it "sanitizes the body when the media type is still sanitizable" do
+      type = "application/json; foo=\xFF".dup.force_encoding('UTF-8')
+      env  = @app.({ "CONTENT_TYPE" => type,
+                     "rack.input"   => StringIO.new("{\"a\":\"\xFF\"}") })
+
+      env["CONTENT_TYPE"].should.be.valid_encoding
+      env["rack.input"].read.should.be.valid_encoding
+    end
+
+    it "preserves frozen CONTENT_TYPE" do
+      env = @app.({ "CONTENT_TYPE" => @content_type.freeze })
+
+      env["CONTENT_TYPE"].should.be.frozen
+      env["CONTENT_TYPE"].should.be.valid_encoding
+    end
+
+    it "does not touch a valid CONTENT_TYPE" do
+      env = @app.({ "CONTENT_TYPE" => "text/plain" })
+
+      env["CONTENT_TYPE"].should == "text/plain"
+    end
+
+    it "ignores a missing CONTENT_TYPE" do
+      env = @app.({})
+
+      env.should.not.include "CONTENT_TYPE"
+    end
+  end
+
   describe "with invalid, incorrectly percent-encoded UTF-8 URI input" do
     before do
       @uri_input   = "http://bar/foo%E0\xe0".dup.force_encoding('UTF-8')

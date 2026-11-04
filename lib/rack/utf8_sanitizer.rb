@@ -80,8 +80,13 @@ module Rack
     ).freeze
 
     HTTP_ = 'HTTP_'
+    CONTENT_TYPE = 'CONTENT_TYPE'
 
     def sanitize(env)
+      # Rack stores Content-Type as CONTENT_TYPE (no HTTP_ prefix), so the loop
+      # below would miss it. Sanitize it first: sanitize_rack_input parses it
+      # with a regexp, which raises ArgumentError on invalid UTF-8.
+      sanitize_content_type(env)
       sanitize_rack_input(env)
       sanitize_cookies(env)
       env.each do |key, value|
@@ -106,6 +111,15 @@ module Rack
       return true if !@only.empty? && @only.none? { |matcher| rack_env_key[matcher] }
 
       false
+    end
+
+    def sanitize_content_type(env)
+      return if skip?(CONTENT_TYPE)
+
+      value = env[CONTENT_TYPE]
+      return unless value.is_a?(String)
+
+      env[CONTENT_TYPE] = transfer_frozen(value, sanitize_string(value))
     end
 
     def build_strategy(options)
